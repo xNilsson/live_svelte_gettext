@@ -1,0 +1,50 @@
+{
+  "name": "livesvelte-gettext-client",
+  "version": "0.1.0",
+  "description": "TypeScript client library for LiveSvelte Gettext - runtime translations for Svelte components",
+  "type": "module",
+  "main": "./dist/translations.js",
+  "types": "./dist/translations.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/translations.d.ts",
+      "import": "./dist/translations.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "i18n",
+    "gettext",
+    "translation",
+    "svelte",
+    "phoenix",
+    "liveview",
+    "elixir"
+  ],
+  "author": "LiveSvelte Gettext Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xNilsson/livesvelte_gettext.git",
+    "directory": "assets"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
