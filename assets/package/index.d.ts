@@ -1,5 +1,5 @@
 /**
- * LiveSvelte Gettext - TypeScript Type Definitions
+ * LiveSvelteGettext - TypeScript Type Definitions
  */
 
 /**

@@ -110,7 +110,7 @@ Clear description of what needs to be done.
 - Documentation examples
 
 **Test Organization:**
-- Unit tests in `test/livesvelte_gettext/`
+- Unit tests in `test/live_svelte_gettext/`
 - Fixtures in `test/fixtures/`
 - Integration tests in `test/integration/`
 
@@ -190,7 +190,7 @@ Use these for efficient workflow:
 ## Communication Style
 
 - Be concise and technical
-- Reference specific files with paths (e.g., `lib/livesvelte_gettext/extractor.ex:45`)
+- Reference specific files with paths (e.g., `lib/live_svelte_gettext/extractor.ex:45`)
 - Use TodoWrite to show progress during sessions
 - Ask clarifying questions when requirements are ambiguous
 - Suggest improvements when you spot opportunities

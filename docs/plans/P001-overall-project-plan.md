@@ -1,4 +1,4 @@
-# LiveSvelte Gettext - Elixir Library Project Plan
+# LiveSvelteGettext - Elixir Library Project Plan
 
 **Project Type:** Elixir Library (Hex Package)
 **Goal:** Create a zero-maintenance i18n solution for Phoenix + Svelte applications using compile-time extraction and macro magic
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Build `livesvelte_gettext` - an Elixir library that automatically extracts translation strings from Svelte components at compile time, integrates seamlessly with Phoenix Gettext, and provides a TypeScript client library for runtime translations. No generated files to commit, no manual maintenance, just pure compile-time magic.
+Build `live_svelte_gettext` - an Elixir library that automatically extracts translation strings from Svelte components at compile time, integrates seamlessly with Phoenix Gettext, and provides a TypeScript client library for runtime translations. No generated files to commit, no manual maintenance, just pure compile-time magic.
 
 **Key Innovation:** Uses Elixir macros and `@external_resource` to scan Svelte files at compile time, generating `gettext()` calls that standard Gettext extraction can discover, while also providing a runtime `all_translations()` function - all without committing generated code.
 
@@ -39,10 +39,10 @@ Build `livesvelte_gettext` - an Elixir library that automatically extracts trans
 ### Core Components
 
 ```
-livesvelte_gettext/
+live_svelte_gettext/
 ├── lib/
-│   ├── livesvelte_gettext.ex              # Main `use` macro
-│   └── livesvelte_gettext/
+│   ├── live_svelte_gettext.ex              # Main `use` macro
+│   └── live_svelte_gettext/
 │       ├── extractor.ex                   # String extraction from Svelte files
 │       ├── compiler.ex                    # Compile-time macro magic
 │       ├── runtime.ex                     # Runtime translation helpers
@@ -57,7 +57,7 @@ livesvelte_gettext/
 │       ├── translations.ts                # TypeScript client source
 │       └── package.json                   # npm package metadata
 ├── test/
-│   ├── livesvelte_gettext_test.exs
+│   ├── live_svelte_gettext_test.exs
 │   ├── extractor_test.exs
 │   └── fixtures/
 │       └── example_components/            # Test Svelte files
@@ -476,7 +476,7 @@ defmodule LiveSvelteGettext.CompilerTest do
 
   # Create a test module at compile time
   defmodule TestGettext do
-    use Gettext, otp_app: :livesvelte_gettext
+    use Gettext, otp_app: :live_svelte_gettext
   end
 
   test "generates module with all_translations/0" do
@@ -645,7 +645,7 @@ export function resetTranslations(): void {
 
 ```json
 {
-  "name": "livesvelte-gettext",
+  "name": "live-svelte-gettext",
   "version": "0.1.0",
   "description": "Type-safe translations for Svelte + Phoenix",
   "type": "module",
@@ -774,7 +774,7 @@ describe('translations', () => {
 **Objective:** Create one-command installation for Phoenix projects
 
 **Deliverables:**
-- [ ] `mix igniter.install livesvelte_gettext` task
+- [ ] `mix igniter.install live_svelte_gettext` task
 - [ ] Automatic file generation
 - [ ] Configuration prompts
 - [ ] Integration tests with fresh Phoenix app
@@ -783,16 +783,16 @@ describe('translations', () => {
 **Implementation:**
 
 ```elixir
-defmodule Mix.Tasks.Igniter.Install.LivesvelteGettext do
+defmodule Mix.Tasks.Igniter.Install.LiveSvelteGettext do
   use Igniter.Mix.Task
 
-  @shortdoc "Installs LiveSvelte Gettext in your Phoenix application"
+  @shortdoc "Installs LiveSvelteGettext in your Phoenix application"
   @moduledoc """
   #{@shortdoc}
 
   ## Example
 
-      mix igniter.install livesvelte_gettext
+      mix igniter.install live_svelte_gettext
 
   ## What it does
 
@@ -806,8 +806,8 @@ defmodule Mix.Tasks.Igniter.Install.LivesvelteGettext do
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
       group: :igniter,
-      installs: [{:livesvelte_gettext, "~> 0.1.0"}],
-      example: "mix igniter.install livesvelte_gettext"
+      installs: [{:live_svelte_gettext, "~> 0.1.0"}],
+      example: "mix igniter.install live_svelte_gettext"
     }
   end
 
@@ -861,7 +861,7 @@ defmodule Mix.Tasks.Igniter.Install.LivesvelteGettext do
 
   defp copy_typescript_library(igniter) do
     # Copy translations.ts to assets directory
-    source = Application.app_dir(:livesvelte_gettext, "priv/templates/translations.ts.eex")
+    source = Application.app_dir(:live_svelte_gettext, "priv/templates/translations.ts.eex")
     dest = "assets/js/translations.ts"
 
     Igniter.Project.IgniterConfig.add_extension(
@@ -876,7 +876,7 @@ defmodule Mix.Tasks.Igniter.Install.LivesvelteGettext do
 
     Mix.shell().info("""
 
-    ✅ LiveSvelte Gettext installed successfully!
+    ✅ LiveSvelteGettext installed successfully!
 
     ## Next Steps
 
@@ -912,7 +912,7 @@ defmodule Mix.Tasks.Igniter.Install.LivesvelteGettext do
 
     4. Translate in .po files and recompile!
 
-    📚 Docs: https://hexdocs.pm/livesvelte_gettext
+    📚 Docs: https://hexdocs.pm/live_svelte_gettext
     """)
 
     igniter
@@ -956,7 +956,7 @@ end
 **README Structure:**
 
 ```markdown
-# LiveSvelte Gettext
+# LiveSvelteGettext
 
 Zero-maintenance internationalization for Phoenix + Svelte applications.
 
@@ -974,7 +974,7 @@ Zero-maintenance internationalization for Phoenix + Svelte applications.
 # mix.exs
 def deps do
   [
-    {:livesvelte_gettext, "~> 0.1.0"}
+    {:live_svelte_gettext, "~> 0.1.0"}
   ]
 end
 ```
@@ -982,7 +982,7 @@ end
 Then run:
 
 ```bash
-mix igniter.install livesvelte_gettext
+mix igniter.install live_svelte_gettext
 ```
 
 ## Quick Start
@@ -1129,7 +1129,7 @@ See the next section for step-by-step instructions to create the Elixir library 
 ### Content Strategy
 
 - **Blog Post:** "Building a Compile-Time Translation Library for Phoenix + Svelte"
-- **Video Tutorial:** Installing and using livesvelte_gettext (optional)
+- **Video Tutorial:** Installing and using live_svelte_gettext (optional)
 - **Case Study:** Migration from manual approach (Monster Construction)
 
 ---

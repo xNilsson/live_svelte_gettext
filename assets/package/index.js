@@ -1,5 +1,5 @@
 /**
- * LiveSvelte Gettext - Runtime Translation Library
+ * LiveSvelteGettext - Runtime Translation Library
  *
  * Provides runtime translation functions for Svelte components and
  * Phoenix LiveView hook for automatic initialization.

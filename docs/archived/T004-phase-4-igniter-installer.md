@@ -12,7 +12,7 @@ Create a one-command installer using Igniter that sets up everything automatical
 
 ## Acceptance Criteria
 
-- [x] `Mix.Tasks.Igniter.Install.LivesvelteGettext` module created
+- [x] `Mix.Tasks.Igniter.Install.LiveSvelteGettext` module created
 - [x] Detect Gettext backend automatically
 - [x] Detect Svelte directory automatically (or prompt)
 - [x] Create SvelteStrings module with correct configuration
@@ -31,7 +31,7 @@ Create a one-command installer using Igniter that sets up everything automatical
 
 ### Actual Implementation
 
-**File:** `lib/mix/tasks/livesvelte_gettext.install.ex`
+**File:** `lib/mix/tasks/live_svelte_gettext.install.ex`
 
 Implemented using modern Igniter API (v0.6+):
 - Uses `igniter/1` (not deprecated `igniter/2`)
@@ -79,10 +79,10 @@ Implemented using modern Igniter API (v0.6+):
 **Usage:**
 ```bash
 # Automatic detection
-mix igniter.install livesvelte_gettext
+mix igniter.install live_svelte_gettext
 
 # Manual configuration
-mix igniter.install livesvelte_gettext --gettext-backend MyAppWeb.Gettext --svelte-path assets/svelte
+mix igniter.install live_svelte_gettext --gettext-backend MyAppWeb.Gettext --svelte-path assets/svelte
 ```
 
 ### Lessons Learned

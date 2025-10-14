@@ -1,10 +1,10 @@
-defmodule Mix.Tasks.LivesvelteGettext.Install do
+defmodule Mix.Tasks.LiveSvelteGettext.Install do
   @moduledoc """
   Installs LiveSvelteGettext in your Phoenix application.
 
   ## Usage
 
-      $ mix igniter.install livesvelte_gettext
+      $ mix igniter.install live_svelte_gettext
 
   This installer will:
   1. Detect your Gettext backend automatically
@@ -22,10 +22,10 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
   ## Examples
 
       # Automatic detection
-      $ mix igniter.install livesvelte_gettext
+      $ mix igniter.install live_svelte_gettext
 
       # Manual configuration
-      $ mix igniter.install livesvelte_gettext --gettext-backend MyAppWeb.Gettext --svelte-path assets/svelte
+      $ mix igniter.install live_svelte_gettext --gettext-backend MyAppWeb.Gettext --svelte-path assets/svelte
   """
 
   use Igniter.Mix.Task
@@ -34,7 +34,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
   def info(_argv, _parent) do
     %Igniter.Mix.Task.Info{
       group: :igniter,
-      example: "mix igniter.install livesvelte_gettext",
+      example: "mix igniter.install live_svelte_gettext",
       schema: [
         gettext_backend: :string,
         svelte_path: :string,
@@ -104,7 +104,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
 
           Then run the installer with --gettext-backend option:
 
-              mix igniter.install livesvelte_gettext --gettext-backend MyAppWeb.Gettext
+              mix igniter.install live_svelte_gettext --gettext-backend MyAppWeb.Gettext
           """
         )
 
@@ -121,7 +121,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
 
           Please specify which one to use with --gettext-backend option:
 
-              mix igniter.install livesvelte_gettext --gettext-backend MyAppWeb.Gettext
+              mix igniter.install live_svelte_gettext --gettext-backend MyAppWeb.Gettext
           """
         )
 
@@ -198,7 +198,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
 
           Please specify the path with --svelte-path option:
 
-              mix igniter.install livesvelte_gettext --svelte-path assets/svelte
+              mix igniter.install live_svelte_gettext --svelte-path assets/svelte
 
           Or create a Svelte directory first.
           """
@@ -247,7 +247,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
       Igniter.Project.Config.configure(
         igniter,
         "config.exs",
-        :livesvelte_gettext,
+        :live_svelte_gettext,
         [:gettext],
         backend
       )
@@ -307,7 +307,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
           Could not find TypeScript translation library to copy.
 
           Please manually copy the library from:
-          https://github.com/xnilsson/livesvelte_gettext/blob/main/assets/js/translations.ts
+          https://github.com/xnilsson/live_svelte_gettext/blob/main/assets/js/translations.ts
 
           To: #{dest_path}
           """
@@ -350,7 +350,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
     # Try to find the TypeScript library in the package
     possible_paths = [
       # When installed as a dependency
-      Path.join([:code.priv_dir(:livesvelte_gettext), "static", "translations.ts"]),
+      Path.join([:code.priv_dir(:live_svelte_gettext), "static", "translations.ts"]),
       # When developing locally
       Path.join([File.cwd!(), "assets", "js", "translations.ts"])
     ]
@@ -377,7 +377,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
         Module: #{inspect(module_name)}
 
       Application config added to config/config.exs:
-        config :livesvelte_gettext, gettext: #{inspect(backend)}
+        config :live_svelte_gettext, gettext: #{inspect(backend)}
 
       Next steps:
 
@@ -414,7 +414,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
           $ mix gettext.merge priv/gettext
 
       For more information, visit:
-      https://github.com/xnilsson/livesvelte_gettext
+      https://github.com/xnilsson/live_svelte_gettext
       """
     )
 

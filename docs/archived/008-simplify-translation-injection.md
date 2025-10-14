@@ -207,7 +207,7 @@ We implemented a `<.svelte_translations />` component that combines the best asp
 
 ### Implementation Details
 
-#### 1. Component (`lib/livesvelte_gettext/components.ex`)
+#### 1. Component (`lib/live_svelte_gettext/components.ex`)
 
 ```elixir
 defmodule LiveSvelteGettext.Components do
@@ -222,7 +222,7 @@ defmodule LiveSvelteGettext.Components do
     # Get module from assigns or application config
     gettext_module =
       assigns.gettext_module ||
-      Application.get_env(:livesvelte_gettext, :gettext) ||
+      Application.get_env(:live_svelte_gettext, :gettext) ||
       raise_configuration_error()
 
     # Fetch translations and render script tag
@@ -235,7 +235,7 @@ end
 
 ```elixir
 # config/config.exs
-config :livesvelte_gettext,
+config :live_svelte_gettext,
   gettext: MyAppWeb.Gettext
 ```
 
@@ -263,9 +263,9 @@ config :livesvelte_gettext,
 ### Related Files
 
 **Implementation:**
-- `lib/livesvelte_gettext/components.ex` - Component module
-- `lib/mix/tasks/livesvelte_gettext.install.ex` - Installer (adds config)
-- `test/livesvelte_gettext/components_test.exs` - Component tests
+- `lib/live_svelte_gettext/components.ex` - Component module
+- `lib/mix/tasks/live_svelte_gettext.install.ex` - Installer (adds config)
+- `test/live_svelte_gettext/components_test.exs` - Component tests
 
 **Documentation:**
 - `README.md` - Updated with component usage
@@ -311,6 +311,6 @@ end
 ```
 
 **Setup:**
-1. Add to `config/config.exs`: `config :livesvelte_gettext, gettext: MyAppWeb.Gettext`
+1. Add to `config/config.exs`: `config :live_svelte_gettext, gettext: MyAppWeb.Gettext`
 2. Import in view helpers: `import LiveSvelteGettext.Components`
 3. Replace manual injection with `<.svelte_translations />`

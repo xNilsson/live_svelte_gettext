@@ -1,7 +1,7 @@
 # Simple test to see if extraction works
 
 defmodule SimpleTest.Gettext do
-  use Gettext.Backend, otp_app: :livesvelte_gettext
+  use Gettext.Backend, otp_app: :live_svelte_gettext
 end
 
 defmodule SimpleTest.Module do
@@ -20,7 +20,7 @@ IO.puts("\nExtractions found: #{length(metadata.extractions)}")
 IO.inspect(List.first(metadata.extractions), limit: :infinity)
 
 # Get POT files
-pot_files = Gettext.Extractor.pot_files(:livesvelte_gettext, [])
+pot_files = Gettext.Extractor.pot_files(:live_svelte_gettext, [])
 IO.puts("\nPOT files: #{length(pot_files)}")
 
 Gettext.Extractor.disable()

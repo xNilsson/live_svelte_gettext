@@ -1,5 +1,5 @@
 /**
- * LiveSvelte Gettext - Translation Wrapper (Optional)
+ * LiveSvelteGettext - Translation Wrapper (Optional)
  *
  * This file is a convenience wrapper that re-exports from live-svelte-gettext.
  * Copy this file to your project if you want to keep existing relative imports.
@@ -8,7 +8,7 @@
  *
  * Copy this file to your project:
  * ```bash
- * cp deps/livesvelte_gettext/priv/static/translations_wrapper.ts assets/svelte/lib/translations.ts
+ * cp deps/live_svelte_gettext/priv/static/translations_wrapper.ts assets/svelte/lib/translations.ts
  * ```
  *
  * Then your existing imports will work without modification:

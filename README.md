@@ -1,4 +1,4 @@
-# LiveSvelte Gettext
+# LiveSvelteGettext
 
 Zero-maintenance internationalization for Phoenix + Svelte applications.
 
@@ -7,8 +7,10 @@ Zero-maintenance internationalization for Phoenix + Svelte applications.
 - ✨ **Compile-Time Extraction** - No generated files to commit
 - 🔄 **Automatic Recompilation** - Changes to Svelte files trigger rebuild
 - 🌍 **Standard Gettext** - Works with existing `mix gettext.extract`
+- 📍 **Accurate Source References** - POT files show actual Svelte file:line numbers
 - 💪 **Type-Safe Client** - Full TypeScript support
 - 🚀 **One-Command Install** - Igniter-based setup
+- ⚡ **Auto-Initialization** - Zero boilerplate via Phoenix LiveView hooks
 
 ## Installation
 
@@ -18,7 +20,7 @@ Zero-maintenance internationalization for Phoenix + Svelte applications.
 # mix.exs
 def deps do
   [
-    {:livesvelte_gettext, "~> 0.1.0"}
+    {:live_svelte_gettext, "~> 0.1.0"}
   ]
 end
 ```
@@ -26,7 +28,7 @@ end
 Then run:
 
 ```bash
-mix igniter.install livesvelte_gettext
+mix igniter.install live_svelte_gettext
 ```
 
 The installer will:
@@ -46,7 +48,7 @@ If the automatic installer doesn't work for your project:
 ```elixir
 def deps do
   [
-    {:livesvelte_gettext, "~> 0.1.0"}
+    {:live_svelte_gettext, "~> 0.1.0"}
   ]
 end
 ```
@@ -71,7 +73,7 @@ end
 
 ```elixir
 # config/config.exs
-config :livesvelte_gettext,
+config :live_svelte_gettext,
   gettext: MyAppWeb.Gettext
 ```
 
@@ -79,7 +81,7 @@ config :livesvelte_gettext,
 
 ```bash
 # Copy the NPM package to your project
-cp -r deps/livesvelte_gettext/assets/package node_modules/live-svelte-gettext
+cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
 ```
 
 Or install from npm (once published):
@@ -87,7 +89,7 @@ Or install from npm (once published):
 npm install live-svelte-gettext
 ```
 
-5. **Register the Phoenix hook** in `assets/js/app.js`:
+5. **Register the Phoenix hook** in `assets/js/app.js` (**required**):
 
 ```javascript
 import { getHooks } from "live-svelte";
@@ -96,10 +98,12 @@ import { LiveSvelteGettextInit } from "live-svelte-gettext";
 const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {
     ...getHooks(Components),
-    LiveSvelteGettextInit,  // Add this line
+    LiveSvelteGettextInit,  // Required - initializes translations automatically
   }
 });
 ```
+
+> ⚠️ **Important**: The `LiveSvelteGettextInit` hook is **required** for translations to work. It automatically initializes translations when the page loads, eliminating the need for manual setup in Svelte components.
 
 ## Quick Start
 
@@ -180,7 +184,7 @@ mix gettext.merge priv/gettext
 
 ## How It Works
 
-LiveSvelte Gettext uses a compile-time approach to make i18n seamless:
+LiveSvelteGettext uses a compile-time approach to make i18n seamless:
 
 ### Compile Time (Zero Maintenance)
 
@@ -246,7 +250,7 @@ Unlike other i18n solutions, there are no intermediate JSON or JavaScript files 
 
 ## API Documentation
 
-Full API documentation is available on [HexDocs](https://hexdocs.pm/livesvelte_gettext).
+Full API documentation is available on [HexDocs](https://hexdocs.pm/live_svelte_gettext).
 
 ### Key Modules
 
@@ -296,7 +300,7 @@ If you get import errors for `live-svelte-gettext`, make sure the package is pro
 
 ```bash
 # Copy from the Hex dependency
-cp -r deps/livesvelte_gettext/assets/package node_modules/live-svelte-gettext
+cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
 
 # Or once published to npm:
 npm install live-svelte-gettext
@@ -364,10 +368,26 @@ Force a recompilation:
 
 ```bash
 mix clean
-mix deps.clean livesvelte_gettext
+mix deps.clean live_svelte_gettext
 mix deps.get
 mix compile
 ```
+
+### POT files showing incorrect Svelte file references
+
+As of v0.1.0, LiveSvelteGettext automatically injects correct Svelte file:line references during `mix gettext.extract` via `CustomExtractor`. You should see references like:
+
+```
+#: assets/svelte/components/Button.svelte:42
+msgid "Save Profile"
+```
+
+If you see incorrect references (like `lib/my_app_web/svelte_strings.ex:39` for all strings), this usually means:
+
+1. **Migration from older version**: Run `mix live_svelte_gettext.fix_references` to update existing POT files
+2. **CustomExtractor not working**: This is likely a bug - please report it!
+
+The `fix_references` task is primarily a fallback tool and shouldn't be needed for normal operation.
 
 ## Contributing
 
@@ -387,8 +407,8 @@ Contributions are welcome! Here's how you can help:
 
 ```bash
 # Clone the repository
-git clone https://github.com/xnilsson/livesvelte_gettext.git
-cd livesvelte_gettext
+git clone https://github.com/xnilsson/live_svelte_gettext.git
+cd live_svelte_gettext
 
 # Install dependencies
 mix deps.get
@@ -413,7 +433,7 @@ mix dialyzer
 mix test
 
 # Run specific test file
-mix test test/livesvelte_gettext/extractor_test.exs
+mix test test/live_svelte_gettext/extractor_test.exs
 
 # Run with coverage
 mix coveralls.html
@@ -439,7 +459,7 @@ msgid "Delete Account"
 
 **Our Solution:**
 
-We solved this by creating a custom extractor that modifies `Macro.Env` before calling `Gettext.Extractor.extract/6`. See `lib/livesvelte_gettext/custom_extractor.ex` for the implementation.
+We solved this by creating a custom extractor that modifies `Macro.Env` before calling `Gettext.Extractor.extract/6`. See `lib/live_svelte_gettext/custom_extractor.ex` for the implementation.
 
 The key insight:
 

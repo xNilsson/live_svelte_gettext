@@ -1,18 +1,31 @@
-defmodule Mix.Tasks.LivesvelteGettext.FixReferences do
+defmodule Mix.Tasks.LiveSvelteGettext.FixReferences do
   @moduledoc """
   Fixes POT/PO file references to point to original Svelte files.
 
-  This task should be run after `mix gettext.extract` to replace generated
-  module references (e.g., `lib/my_app_web/svelte_strings.ex:39`) with actual
-  Svelte file references (e.g., `assets/svelte/Button.svelte:42`).
+  > ⚠️ **Note**: As of v0.1.0, LiveSvelteGettext uses `CustomExtractor` to automatically
+  > inject correct Svelte file references during `mix gettext.extract`. This task is now
+  > primarily a **fallback/troubleshooting tool** for edge cases where automatic extraction
+  > doesn't work as expected.
+
+  ## When to Use This Task
+
+  You typically **don't need** this task because:
+  - `CustomExtractor` automatically handles references during extraction
+  - POT files will already contain correct Svelte file paths
+
+  Use this task only if:
+  - You're migrating from an older version with incorrect references
+  - You have existing POT files that need reference fixing
+  - CustomExtractor isn't working in your specific setup (please report as bug!)
+  - You're troubleshooting reference issues
 
   ## Usage
 
-      mix livesvelte_gettext.fix_references
+      mix live_svelte_gettext.fix_references
 
   Or run both extraction and fixing in one command:
 
-      mix gettext.extract && mix livesvelte_gettext.fix_references
+      mix gettext.extract && mix live_svelte_gettext.fix_references
 
   ## How it works
 

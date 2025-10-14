@@ -1,5 +1,5 @@
 /**
- * LiveSvelte Gettext - TypeScript Client Library
+ * LiveSvelteGettext - TypeScript Client Library
  *
  * Provides runtime translation functions for Svelte components.
  * Receives translations from the Phoenix server and handles interpolation and pluralization.

@@ -56,7 +56,7 @@ This task should be reconsidered if:
 
 We've added a "For Library Authors" section to the README documenting our pattern. This provides value to the community without the overhead of maintaining an upstream PR.
 
-Any library facing the same problem can copy our approach from `lib/livesvelte_gettext/custom_extractor.ex`.
+Any library facing the same problem can copy our approach from `lib/live_svelte_gettext/custom_extractor.ex`.
 
 ---
 
@@ -310,7 +310,7 @@ end
 
 Once the PR is merged and released, we can update our compiler:
 
-**File:** `lib/livesvelte_gettext/compiler.ex`
+**File:** `lib/live_svelte_gettext/compiler.ex`
 
 ```elixir
 defp generate_extraction_calls(extractions) do

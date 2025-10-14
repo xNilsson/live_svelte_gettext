@@ -32,7 +32,7 @@ This is the foundation of the entire library - it needs to handle all edge cases
 
 ### Completed Implementation (2025-10-14)
 
-**Module:** `lib/livesvelte_gettext/extractor.ex`
+**Module:** `lib/live_svelte_gettext/extractor.ex`
 
 #### Regex Patterns Used:
 
@@ -63,7 +63,7 @@ This is the foundation of the entire library - it needs to handle all edge cases
 - **Total:** 28 tests (including 1 doctest)
 - **Coverage:** 100%
 - **Test files:**
-  - `test/livesvelte_gettext/extractor_test.exs` (21 unit tests)
+  - `test/live_svelte_gettext/extractor_test.exs` (21 unit tests)
   - `test/integration/fixtures_test.exs` (6 integration tests)
 - **Fixtures created:**
   - `test/fixtures/UserProfile.svelte` (realistic user profile component)

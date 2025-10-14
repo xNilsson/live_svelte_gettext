@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-initializes translations via Phoenix LiveView hook
   - Zero manual setup required in Svelte components
 
-- **Igniter installer** (`mix igniter.install livesvelte_gettext`)
+- **Igniter installer** (`mix igniter.install live_svelte_gettext`)
   - Automatic Gettext backend detection
   - Automatic Svelte directory detection
   - Creates `SvelteStrings` module with correct configuration
@@ -95,4 +95,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[0.1.0]: https://github.com/xnilsson/livesvelte_gettext/releases/tag/v0.1.0
+[0.1.0]: https://github.com/xnilsson/live_svelte_gettext/releases/tag/v0.1.0

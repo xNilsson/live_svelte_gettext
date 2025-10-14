@@ -124,7 +124,7 @@ ngettext(singular: string, plural: string, count: number, vars?): string
 - Node environment
 
 **Package:** `assets/package.json`
-- Name: livesvelte-gettext-client
+- Name: live-svelte-gettext-client
 - Version: 0.1.0
 - Type: module (ESM)
 - Main: ./dist/translations.js
@@ -162,7 +162,7 @@ ngettext(singular: string, plural: string, count: number, vars?): string
 
 The Igniter installer will need to:
 1. Copy `assets/js/translations.ts` to user's project
-2. Or install via npm: `npm install livesvelte-gettext-client`
+2. Or install via npm: `npm install live-svelte-gettext-client`
 3. Import path: `import { initTranslations, gettext, ngettext } from './translations'`
 
 ## Related

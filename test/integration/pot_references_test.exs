@@ -3,7 +3,7 @@ defmodule LiveSvelteGettext.Integration.PotReferencesTest do
 
   # Define a test Gettext backend
   defmodule TestGettextBackend do
-    use Gettext.Backend, otp_app: :livesvelte_gettext
+    use Gettext.Backend, otp_app: :live_svelte_gettext
   end
 
   # Define a module that uses LiveSvelteGettext

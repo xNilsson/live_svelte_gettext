@@ -54,7 +54,7 @@ This could happen if:
 
 ## Investigation Needed
 
-1. **Check the Extractor module** (`lib/livesvelte_gettext/extractor.ex`)
+1. **Check the Extractor module** (`lib/live_svelte_gettext/extractor.ex`)
    - How does it parse Svelte files?
    - When does it replace template expressions with `__BINDING__`?
    - Is this replacement too aggressive?
@@ -142,9 +142,9 @@ end
 
 ## Files to Review
 
-- `lib/livesvelte_gettext/extractor.ex` - Main extraction logic
-- `lib/livesvelte_gettext/compiler.ex` - Code generation
-- `test/livesvelte_gettext/extractor_test.exs` - Test coverage
+- `lib/live_svelte_gettext/extractor.ex` - Main extraction logic
+- `lib/live_svelte_gettext/compiler.ex` - Code generation
+- `test/live_svelte_gettext/extractor_test.exs` - Test coverage
 - Example Svelte files in test fixtures
 
 ## Success Criteria
@@ -159,7 +159,7 @@ end
 ## Implementation Summary
 
 ### Root Cause
-The bug was in `lib/livesvelte_gettext/compiler.ex`, specifically in the `all_translations/1` function. The function was creating dummy bindings like `%{name: "__BINDING__"}` and passing them to `Gettext.dgettext()`, which caused Gettext's interpolation engine to substitute `%{name}` patterns with the string `"__BINDING__"` in the returned translations.
+The bug was in `lib/live_svelte_gettext/compiler.ex`, specifically in the `all_translations/1` function. The function was creating dummy bindings like `%{name: "__BINDING__"}` and passing them to `Gettext.dgettext()`, which caused Gettext's interpolation engine to substitute `%{name}` patterns with the string `"__BINDING__"` in the returned translations.
 
 ### Solution
 **For gettext():**
@@ -173,7 +173,7 @@ The bug was in `lib/livesvelte_gettext/compiler.ex`, specifically in the `all_tr
 - Frontend handles interpolation at runtime with actual values
 
 ### Files Changed
-- `lib/livesvelte_gettext/compiler.ex:236-277` - Fixed `all_translations/1` function
+- `lib/live_svelte_gettext/compiler.ex:236-277` - Fixed `all_translations/1` function
 - `test/integration/full_compile_test.exs:80-103` - Added comprehensive test coverage
 
 ### Trade-offs

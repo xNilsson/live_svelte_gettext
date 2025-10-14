@@ -10,7 +10,7 @@
 
 ## Description
 
-Currently, all Svelte translation strings extracted by `livesvelte_gettext` have references pointing to the same line in the generated module (e.g., `lib/my_app_web/svelte_strings.ex:39`). This is because the macro generates all `gettext()` calls at compile time, and `mix gettext.extract` sees them as originating from the macro invocation line.
+Currently, all Svelte translation strings extracted by `live_svelte_gettext` have references pointing to the same line in the generated module (e.g., `lib/my_app_web/svelte_strings.ex:39`). This is because the macro generates all `gettext()` calls at compile time, and `mix gettext.extract` sees them as originating from the macro invocation line.
 
 This behavior breaks workflows that rely on accurate source references, particularly tools like `poflow` that need to update the original source files when editing msgids.
 
@@ -138,7 +138,7 @@ After implementing, verify that:
 If AST metadata doesn't work, create a post-processing step:
 
 1. Keep metadata in `__lsg_metadata__()`
-2. Create `mix livesvelte_gettext.fix_references` task
+2. Create `mix live_svelte_gettext.fix_references` task
 3. After `mix gettext.extract`, run this task to:
    - Read `.pot`/`.po` files
    - Match msgids to original locations via metadata
@@ -195,7 +195,7 @@ The `quote line:, file:` options only set the `:keep` metadata on AST nodes (e.g
 
 ### Attempt 2: Post-Processing Mix Task ✅ (2025-10-14 - superseded)
 
-**Created:** `lib/mix/tasks/livesvelte_gettext.fix_references.ex`
+**Created:** `lib/mix/tasks/live_svelte_gettext.fix_references.ex`
 
 **How it works:**
 1. Runs after `mix gettext.extract`
@@ -207,7 +207,7 @@ The `quote line:, file:` options only set the `:keep` metadata on AST nodes (e.g
 **Workflow:**
 ```bash
 mix gettext.extract
-mix livesvelte_gettext.fix_references
+mix live_svelte_gettext.fix_references
 ```
 
 **Test Results (Monster Construction project):**
@@ -231,7 +231,7 @@ mix livesvelte_gettext.fix_references
 
 ### Attempt 3: CustomExtractor with Macro.Env Modification ✅✅ (2025-10-14 - CURRENT)
 
-**Created:** `lib/livesvelte_gettext/custom_extractor.ex`
+**Created:** `lib/live_svelte_gettext/custom_extractor.ex`
 
 **How it works:**
 1. During macro expansion, we call `LiveSvelteGettext.CustomExtractor.extract_with_location/8`
@@ -243,7 +243,7 @@ mix livesvelte_gettext.fix_references
 **Key Implementation:**
 
 ```elixir
-# lib/livesvelte_gettext/custom_extractor.ex
+# lib/live_svelte_gettext/custom_extractor.ex
 def extract_with_location(env, backend, domain, msgctxt, msgid, extracted_comments, file, line) do
   # Create a modified environment with custom file and line
   modified_env = %{env | file: file, line: line}
@@ -470,18 +470,18 @@ Temporarily replace Svelte files during extraction
 
 ### Code Locations to Modify
 
-1. **`lib/livesvelte_gettext/compiler.ex`** (Line ~155-172)
+1. **`lib/live_svelte_gettext/compiler.ex`** (Line ~155-172)
    - Function: `generate_extraction_calls/1`
    - Add: `quote line: line, file: file` options
    - Add: Path relativization logic
 
-2. **`lib/livesvelte_gettext/extractor.ex`** (Line ~170-182)
+2. **`lib/live_svelte_gettext/extractor.ex`** (Line ~170-182)
    - Function: `extract_with_regex/3`
    - Ensure file paths are stored consistently
    - Consider storing both absolute and relative paths
 
 3. **Tests to add:**
-   - `test/livesvelte_gettext/compiler_test.exs` - Test AST generation with location metadata
+   - `test/live_svelte_gettext/compiler_test.exs` - Test AST generation with location metadata
    - `test/integration/gettext_extraction_test.exs` - Test full extraction workflow
    - `test/integration/pot_references_test.exs` - Verify `.pot` file references
 
@@ -524,7 +524,7 @@ Temporarily replace Svelte files during extraction
 ### 1. Unit Tests
 
 ```elixir
-# test/livesvelte_gettext/compiler_test.exs
+# test/live_svelte_gettext/compiler_test.exs
 defmodule LiveSvelteGettext.CompilerTest do
   test "generates AST with correct file and line metadata" do
     extractions = [
@@ -573,8 +573,8 @@ Test with a real project (like Monster Construction):
 # In monster_construction project
 cd ~/code/monster_construction_worktrees/plan-014/web
 
-# Update livesvelte_gettext dependency
-mix deps.update livesvelte_gettext
+# Update live_svelte_gettext dependency
+mix deps.update live_svelte_gettext
 
 # Clean and recompile
 mix clean
@@ -670,7 +670,7 @@ _ = gettext("Save")
 
 ### Alternative 2: Custom Mix Task
 
-Create `mix livesvelte_gettext.extract` that bypasses Gettext:
+Create `mix live_svelte_gettext.extract` that bypasses Gettext:
 
 **Rejected:**
 - Reinvents the wheel
@@ -679,7 +679,7 @@ Create `mix livesvelte_gettext.extract` that bypasses Gettext:
 
 ### Alternative 3: Post-Processing Task
 
-Keep current behavior, add `mix livesvelte_gettext.fix_references`:
+Keep current behavior, add `mix live_svelte_gettext.fix_references`:
 
 **Rejected as primary approach:**
 - Extra step in workflow

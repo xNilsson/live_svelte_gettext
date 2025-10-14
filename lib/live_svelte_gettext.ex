@@ -45,7 +45,7 @@ defmodule LiveSvelteGettext do
       end
 
       # In your Svelte component:
-      import { setTranslations } from 'livesvelte-gettext'
+      import { setTranslations } from 'live-svelte-gettext'
       export let translations
       setTranslations(translations)
   """

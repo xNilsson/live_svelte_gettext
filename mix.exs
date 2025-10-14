@@ -2,11 +2,11 @@ defmodule LiveSvelteGettext.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/xnilsson/livesvelte_gettext"
+  @source_url "https://github.com/xnilsson/live_svelte_gettext"
 
   def project do
     [
-      app: :livesvelte_gettext,
+      app: :live_svelte_gettext,
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -17,7 +17,7 @@ defmodule LiveSvelteGettext.MixProject do
       package: package(),
 
       # Documentation
-      name: "LiveSvelte Gettext",
+      name: "LiveSvelteGettext",
       source_url: @source_url,
       homepage_url: @source_url,
       docs: docs(),
@@ -59,8 +59,17 @@ defmodule LiveSvelteGettext.MixProject do
 
   defp package do
     [
-      name: "livesvelte_gettext",
-      files: ~w(lib priv assets .formatter.exs mix.exs README.md LICENSE CHANGELOG.md),
+      name: "live_svelte_gettext",
+      files: ~w(
+        lib
+        priv
+        assets/package
+        .formatter.exs
+        mix.exs
+        README.md
+        LICENSE
+        CHANGELOG.md
+      ),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
@@ -90,7 +99,7 @@ defmodule LiveSvelteGettext.MixProject do
           LiveSvelteGettext.Compiler
         ],
         Tasks: [
-          Mix.Tasks.LivesvelteGettext.Install
+          Mix.Tasks.LiveSvelteGettext.Install
         ]
       ],
       groups_for_extras: [

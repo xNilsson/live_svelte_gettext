@@ -190,7 +190,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
 - Update Igniter to handle npm install and app.js modification
 
 ### Phase 3: Naming Consistency (Separate Task)
-- Rename `livesvelte_gettext` → `live_svelte_gettext` (Hex)
+- Rename `live_svelte_gettext` → `live_svelte_gettext` (Hex)
 - Ensures naming matches `live_svelte` package pattern
 
 ## Why This Approach?

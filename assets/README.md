@@ -1,6 +1,6 @@
-# LiveSvelte Gettext Client
+# LiveSvelteGettext Client
 
-TypeScript client library for runtime translations in Svelte components. Part of the [LiveSvelte Gettext](https://github.com/woylie/livesvelte_gettext) project.
+TypeScript client library for runtime translations in Svelte components. Part of the [LiveSvelteGettext](https://github.com/xnilsson/live_svelte_gettext) project.
 
 ## Features
 
@@ -13,10 +13,10 @@ TypeScript client library for runtime translations in Svelte components. Part of
 
 ## Installation
 
-This library is typically installed automatically by the `livesvelte_gettext` Elixir package. If you need to install it manually:
+This library is typically installed automatically by the `live_svelte_gettext` Elixir package. If you need to install it manually:
 
 ```bash
-npm install livesvelte-gettext-client
+npm install live-svelte-gettext-client
 ```
 
 Or copy `translations.ts` directly into your Phoenix project at `assets/js/translations.ts`.
@@ -242,11 +242,11 @@ MIT
 
 ## Contributing
 
-Part of the [LiveSvelte Gettext](https://github.com/woylie/livesvelte_gettext) project.
+Part of the [LiveSvelteGettext](https://github.com/xnilsson/live_svelte_gettext) project.
 See the main repository for contribution guidelines.
 
 ## Related Projects
 
-- [livesvelte_gettext](https://hex.pm/packages/livesvelte_gettext) - Elixir library
+- [live_svelte_gettext](https://hex.pm/packages/live_svelte_gettext) - Elixir library
 - [live_svelte](https://hex.pm/packages/live_svelte) - Svelte integration for Phoenix LiveView
 - [gettext](https://hex.pm/packages/gettext) - Elixir internationalization library

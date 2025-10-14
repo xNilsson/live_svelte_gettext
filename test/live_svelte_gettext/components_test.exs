@@ -6,7 +6,7 @@ defmodule LiveSvelteGettext.ComponentsTest do
 
   # Test Gettext backend module
   defmodule TestGettext do
-    use Gettext.Backend, otp_app: :livesvelte_gettext
+    use Gettext.Backend, otp_app: :live_svelte_gettext
 
     # Mock SvelteStrings module
     defmodule SvelteStrings do
@@ -38,10 +38,10 @@ defmodule LiveSvelteGettext.ComponentsTest do
   describe "svelte_translations/1" do
     test "renders script tag with translations from application config" do
       # Configure application config
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         assigns = %{}
 
@@ -57,19 +57,19 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "renders script tag with translations from explicit gettext_module attribute" do
       # Don't set application config - use explicit module
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.delete_env(:livesvelte_gettext, :gettext)
+        Application.delete_env(:live_svelte_gettext, :gettext)
 
         assigns = %{}
 
@@ -84,17 +84,17 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         end
       end
     end
 
     test "explicit gettext_module overrides application config" do
       # Set config to a different module (which doesn't exist)
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, :some_other_module)
+        Application.put_env(:live_svelte_gettext, :gettext, :some_other_module)
 
         assigns = %{}
 
@@ -108,18 +108,18 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "respects explicit locale attribute" do
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         assigns = %{}
 
@@ -135,18 +135,18 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "uses current locale from Gettext when no explicit locale" do
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         # Set locale to Spanish
         Gettext.put_locale(TestGettext, "es")
@@ -165,18 +165,18 @@ defmodule LiveSvelteGettext.ComponentsTest do
         Gettext.put_locale(TestGettext, "en")
 
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "respects custom id attribute" do
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         assigns = %{}
 
@@ -189,18 +189,18 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "includes Phoenix hook div for auto-initialization" do
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         assigns = %{}
 
@@ -219,18 +219,18 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "hook div uses custom id attribute" do
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, TestGettext)
 
         assigns = %{}
 
@@ -246,19 +246,19 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end
 
     test "raises helpful error when no gettext_module configured or provided" do
       # Remove application config
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.delete_env(:livesvelte_gettext, :gettext)
+        Application.delete_env(:live_svelte_gettext, :gettext)
 
         assigns = %{}
 
@@ -270,7 +270,7 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         end
       end
     end
@@ -278,13 +278,13 @@ defmodule LiveSvelteGettext.ComponentsTest do
     test "raises helpful error when SvelteStrings module not found" do
       # Create a module without SvelteStrings
       defmodule BadGettext do
-        use Gettext.Backend, otp_app: :livesvelte_gettext
+        use Gettext.Backend, otp_app: :live_svelte_gettext
       end
 
-      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+      original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
-        Application.put_env(:livesvelte_gettext, :gettext, BadGettext)
+        Application.put_env(:live_svelte_gettext, :gettext, BadGettext)
 
         assigns = %{}
 
@@ -298,9 +298,9 @@ defmodule LiveSvelteGettext.ComponentsTest do
       after
         # Restore original config
         if original_config do
-          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+          Application.put_env(:live_svelte_gettext, :gettext, original_config)
         else
-          Application.delete_env(:livesvelte_gettext, :gettext)
+          Application.delete_env(:live_svelte_gettext, :gettext)
         end
       end
     end

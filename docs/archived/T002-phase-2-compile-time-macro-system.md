@@ -28,9 +28,9 @@ Build the `use LiveSvelteGettext` macro that generates code at compile time. Thi
 ## Implementation Notes
 
 ### Files Created
-- `lib/livesvelte_gettext.ex` - Main module with `__using__/1` macro (73 lines)
-- `lib/livesvelte_gettext/compiler.ex` - AST generation and compilation logic (274 lines)
-- `test/livesvelte_gettext/compiler_test.exs` - Unit tests for Compiler module
+- `lib/live_svelte_gettext.ex` - Main module with `__using__/1` macro (73 lines)
+- `lib/live_svelte_gettext/compiler.ex` - AST generation and compilation logic (274 lines)
+- `test/live_svelte_gettext/compiler_test.exs` - Unit tests for Compiler module
 - `test/integration/full_compile_test.exs` - Integration tests for full compile cycle
 - `test/integration/recompilation_test.exs` - Tests for @external_resource behavior
 

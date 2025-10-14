@@ -1,4 +1,4 @@
-# LiveSvelte Gettext - Project Index
+# LiveSvelteGettext - Project Index
 
 **Last Updated:** 2025-10-14
 
@@ -42,7 +42,7 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 - **Total Active Tasks:** 2
 - **Not Started:** 1
 - **In Progress:** 1
-- **Completed (Archived):** 5
+- **Completed (Archived):** 6
 - **Postponed:** 1
 
 ---
@@ -61,11 +61,11 @@ Implementing auto-initialization of translations in the `.svelte_translations` c
 
 | ID | Title | Completed |
 |----|-------|-----------|
+| [T011](archived/T011-complete-project-rename-migration.md) | Complete Project Rename Migration | 2025-10-14 |
 | [T006](archived/T006-keep-references.md) | Preserve Svelte Source File References | 2025-10-14 |
 | [T004](archived/T004-phase-4-igniter-installer.md) | Igniter Installer | 2025-10-14 |
 | [T003](archived/T003-phase-3-typescript-client-library.md) | TypeScript Client Library | 2025-10-14 |
 | [T002](archived/T002-phase-2-compile-time-macro-system.md) | Compile-Time Macro System | 2025-10-14 |
-| [T001](archived/T001-phase-1-core-extraction-engine.md) | Core Extraction Engine | 2025-10-14 |
 
 ---
 

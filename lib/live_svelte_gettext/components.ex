@@ -20,12 +20,12 @@ defmodule LiveSvelteGettext.Components do
   By default, the component reads the Gettext module from application config:
 
       # config/config.exs
-      config :livesvelte_gettext,
+      config :live_svelte_gettext,
         gettext: MyAppWeb.Gettext
 
   This is automatically configured when you run:
 
-      mix igniter.install livesvelte_gettext
+      mix igniter.install live_svelte_gettext
 
   You can also pass the Gettext module explicitly:
 
@@ -59,7 +59,7 @@ defmodule LiveSvelteGettext.Components do
   ## Attributes
 
   - `:gettext_module` - The Gettext module to use. Defaults to the module
-    configured in `:livesvelte_gettext, :gettext` application config.
+    configured in `:live_svelte_gettext, :gettext` application config.
 
   - `:locale` - Explicit locale override. Defaults to the current locale
     from `Gettext.get_locale/1`.
@@ -120,7 +120,7 @@ defmodule LiveSvelteGettext.Components do
   """
   attr(:gettext_module, :atom,
     default: nil,
-    doc: "Gettext module (defaults to :livesvelte_gettext :gettext config)"
+    doc: "Gettext module (defaults to :live_svelte_gettext :gettext config)"
   )
 
   attr(:locale, :string,
@@ -137,7 +137,7 @@ defmodule LiveSvelteGettext.Components do
     # Get Gettext module from assigns or application config
     gettext_module =
       assigns.gettext_module ||
-        Application.get_env(:livesvelte_gettext, :gettext) ||
+        Application.get_env(:live_svelte_gettext, :gettext) ||
         raise_configuration_error()
 
     # Get locale (explicit or from Gettext.get_locale)
@@ -188,17 +188,17 @@ defmodule LiveSvelteGettext.Components do
     1. Application config (recommended):
 
        # config/config.exs
-       config :livesvelte_gettext,
+       config :live_svelte_gettext,
          gettext: MyAppWeb.Gettext
 
        This is automatically added when you run:
-       mix igniter.install livesvelte_gettext
+       mix igniter.install live_svelte_gettext
 
     2. Pass explicitly to the component:
 
        <.svelte_translations gettext_module={MyAppWeb.Gettext} />
 
-    For more information, see: https://hexdocs.pm/livesvelte_gettext
+    For more information, see: https://hexdocs.pm/live_svelte_gettext
     """
   end
 end
