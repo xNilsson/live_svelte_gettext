@@ -10,7 +10,7 @@ defmodule LiveSvelteGettext.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
 
       # Hex package metadata
       description: "Zero-maintenance i18n for Phoenix + Svelte using compile-time extraction",
@@ -80,10 +80,10 @@ defmodule LiveSvelteGettext.MixProject do
         "LICENSE"
       ],
       groups_for_modules: [
-        "Core": [
+        Core: [
           LiveSvelteGettext
         ],
-        "Internal": [
+        Internal: [
           LiveSvelteGettext.Extractor,
           LiveSvelteGettext.Compiler,
           LiveSvelteGettext.Runtime
