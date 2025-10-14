@@ -1,16 +1,37 @@
 # LiveSvelteGettext
 
-Zero-maintenance internationalization for Phoenix + Svelte applications.
+**Status:** Proof of Concept
 
-## Features
+A compile-time solution for using Phoenix Gettext translations in Svelte components.
 
-- ✨ **Compile-Time Extraction** - No generated files to commit
-- 🔄 **Automatic Recompilation** - Changes to Svelte files trigger rebuild
-- 🌍 **Standard Gettext** - Works with existing `mix gettext.extract`
-- 📍 **Accurate Source References** - POT files show actual Svelte file:line numbers
-- 💪 **Type-Safe Client** - Full TypeScript support
-- 🚀 **One-Command Install** - Igniter-based setup
-- ⚡ **Auto-Initialization** - Zero boilerplate via Phoenix LiveView hooks
+## The Problem
+
+When using [live_svelte](https://github.com/woutdp/live_svelte) with Phoenix, there's no straightforward way to use gettext translations in Svelte components. This issue was raised in [live_svelte#120](https://github.com/woutdp/live_svelte/issues/120).
+
+The challenges:
+- Svelte components need access to translations at runtime
+- `mix gettext.extract` needs to discover translation strings in `.svelte` files
+- `.po` file references should point to the actual Svelte source file:line for maintainability
+- Ideally, no generated files to commit or manually maintain
+
+## The Solution
+
+This library uses Elixir macros at compile time to:
+1. Scan `.svelte` files for `gettext()` and `ngettext()` calls
+2. Generate Elixir code that `mix gettext.extract` can discover
+3. Inject accurate source references into `.pot` files via custom extractor
+4. Provide runtime translation functions for Svelte via a TypeScript library
+
+No generated files are committed - everything happens at compile time using `@external_resource` for automatic recompilation.
+
+## Key Features
+
+- **Compile-Time Extraction**: Scans Svelte files during compilation
+- **Phoenix Gettext Compatible**: Works with existing `mix gettext.extract` workflow
+- **Accurate Source References**: `.pot` files show `assets/svelte/Button.svelte:42` instead of generated code locations
+- **Type-Safe Client**: TypeScript library for runtime translations
+- **Simple Setup**: Igniter installer handles configuration
+- **Automatic Initialization**: Phoenix LiveView hook injects translations on page load
 
 ## Installation
 
@@ -36,8 +57,7 @@ The installer will:
 - Find your Svelte directory
 - Configure your Gettext module in `config/config.exs`
 - Create a `SvelteStrings` module with the correct configuration
-- Copy the TypeScript translation library to `assets/js/translations.ts`
-- Provide usage instructions
+- Provide usage instructions for installing the npm package and registering the hook
 
 ### Manual Installation
 
@@ -109,7 +129,9 @@ const liveSocket = new LiveSocket("/live", Socket, {
 
 Once installed, you can start using translations in your Svelte components immediately.
 
-### 1. Import the component in your view helpers
+### 1. Import the component helper
+
+To use the `<.svelte_translations />` component in your templates, add this import to your view helpers:
 
 ```elixir
 # lib/my_app_web.ex
@@ -121,9 +143,9 @@ def html do
 end
 ```
 
-### 2. Add translation injection to your template
+### 2. Inject translations into your template
 
-Add the `svelte_translations` component before your Svelte components:
+Add the `<.svelte_translations />` component in your layout or LiveView template. This component renders a `<script>` tag containing translations as JSON:
 
 ```heex
 <!-- In your layout or LiveView template -->
@@ -132,11 +154,13 @@ Add the `svelte_translations` component before your Svelte components:
 <.svelte name="MyComponent" props={%{...}} />
 ```
 
-The component will automatically:
-- Use the Gettext module configured in `config/config.exs`
-- Fetch translations for the current locale
-- Inject them as JSON in a `<script>` tag
-- Trigger the `LiveSvelteGettextInit` hook to initialize translations when the page loads
+The component renders a `<script>` tag with translations as JSON. The `LiveSvelteGettextInit` hook (registered in step 5 of installation) automatically reads this data when the page loads and initializes the translation store for your Svelte components.
+
+**How it works:**
+- Component fetches translations for the current locale from your Gettext backend
+- Renders them as JSON in a `<script id="svelte-translations">` tag
+- The Phoenix hook reads the JSON and initializes the translation functions
+- Your Svelte components can now call `gettext()` and `ngettext()`
 
 **Advanced usage:**
 
@@ -167,7 +191,7 @@ The component will automatically:
 </div>
 ```
 
-That's it! Translations are automatically initialized via the Phoenix hook when the page loads.
+That's it! No manual initialization needed - the hook handles everything automatically.
 
 ### 4. Extract and translate
 
@@ -184,69 +208,126 @@ mix gettext.merge priv/gettext
 
 ## How It Works
 
-LiveSvelteGettext uses a compile-time approach to make i18n seamless:
+This POC uses a compile-time macro approach to bridge Elixir's gettext and Svelte's runtime:
 
-### Compile Time (Zero Maintenance)
+### Compile Time
 
-1. **Extraction**: When you compile your app, `LiveSvelteGettext` scans all `.svelte` files in your configured directory
-2. **Code Generation**: It generates Elixir `gettext()` and `ngettext()` calls in your `SvelteStrings` module
-3. **Discovery**: When you run `mix gettext.extract`, these generated calls are discovered just like regular Gettext usage
-4. **Recompilation**: Uses `@external_resource` to automatically recompile when Svelte files change
+1. **File Scanning**: When you compile, the `use LiveSvelteGettext` macro runs and scans all `.svelte` files
+2. **String Extraction**: Regex patterns extract `gettext()` and `ngettext()` calls with their file:line locations
+3. **Code Generation**: The macro generates Elixir code in your module with:
+   - `@external_resource` attributes (triggers recompilation when Svelte files change)
+   - Calls to `CustomExtractor.extract_with_location/8` (preserves accurate source references)
+   - An `all_translations/1` function for runtime access
+4. **Gettext Discovery**: When you run `mix gettext.extract`, it discovers the generated extraction calls
+5. **Accurate References**: The `CustomExtractor` modifies `Macro.Env` to inject the actual Svelte file:line into `.pot` files
 
-### Runtime (Fast and Simple)
+### Runtime
 
-1. **Translation Map**: Your `SvelteStrings` module has an `all_translations/1` function that returns a map of all translations
-2. **Server → Client**: You pass this map from your LiveView to your Svelte component
-3. **Client-Side**: The TypeScript library handles interpolation and pluralization in the browser
+1. **Server Side**: The `<.svelte_translations />` component fetches translations and renders them as JSON in a `<script>` tag
+2. **Client Side**: The `LiveSvelteGettextInit` Phoenix hook reads the JSON and initializes the TypeScript translation store
+3. **Svelte Components**: Call `gettext()` and `ngettext()` - interpolation and pluralization happen in the browser
 
 ### No Generated Files
 
-Unlike other i18n solutions, there are no intermediate JSON or JavaScript files to commit. Everything is extracted and compiled at build time.
+Everything is generated at compile time in memory. No intermediate files to commit or maintain.
+
+## Architectural Decisions
+
+These are the key design choices made in this POC and the reasoning behind them:
+
+### 1. Script Tag for Translation Injection (Not Props)
+
+**Decision**: Pass translations via a `<script>` tag with JSON rather than as props to each Svelte component.
+
+**Reasoning**:
+- **Performance**: Avoids serializing potentially large translation objects multiple times per page
+- **Global Access**: All Svelte components can access translations without prop drilling
+- **Separation of Concerns**: Translation data is separate from component props
+- **Caching**: The browser can cache the inline script across LiveView updates
+
+This is a preference based on architectural feel rather than hard performance data.
+
+### 2. Compile-Time Macro Generation
+
+**Decision**: Use Elixir macros to generate code at compile time rather than runtime discovery or generated files.
+
+**Reasoning**:
+- **No Committed Files**: Avoids generated `.ex` or `.json` files in version control
+- **Phoenix Integration**: Generated code naturally integrates with `mix gettext.extract`
+- **Automatic Updates**: `@external_resource` triggers recompilation when Svelte files change
+- **Zero Runtime Cost**: All extraction work happens once at compile time
+
+This keeps the developer workflow simple: write `gettext()` in Svelte, run `mix compile` and `mix gettext.extract`.
+
+### 3. Full .po File Compatibility
+
+**Decision**: Ensure complete compatibility with Phoenix's gettext toolchain, including accurate source references.
+
+**Reasoning**:
+- **Existing Tools**: Developers can use their existing translation workflows
+- **Reference Accuracy**: `.pot` files showing `assets/svelte/Button.svelte:42` helps translators understand context
+- **CLI Tool Integration**: Makes it possible to use tools like [poflow](https://github.com/xNilsson/poflow) for AI-assisted translation. `poflow` is a tool built by me to make .po files changes more efficiently with llms.
+- **No Learning Curve**: Developers already know `mix gettext.extract` and `.po` file workflows
+
+The `CustomExtractor` was necessary to solve the "all references point to the macro invocation line" problem.
+
+### 4. NPM Package for TypeScript Client
+
+**Decision**: Create a standalone npm package (`live-svelte-gettext`) for the runtime translation functions.
+
+**Reasoning**:
+- **Minimal Setup**: Developers can `import { gettext } from 'live-svelte-gettext'` immediately
+- **Type Safety**: Full TypeScript types for better DX
+- **Reusability**: The runtime library could work with other backends in the future
+- **Familiar Pattern**: Follows standard npm package conventions
+
+The package will be published to npm for easy installation.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Compile Time (Elixir)                                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  1. Scan *.svelte files                                      │
-│     └─ Extract gettext() and ngettext() calls                │
-│                                                               │
-│  2. Generate Elixir code                                     │
-│     ├─ gettext("string") calls for extraction                │
-│     └─ all_translations/1 runtime function                   │
-│                                                               │
-│  3. Set @external_resource                                   │
-│     └─ Recompile when Svelte files change                    │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ mix gettext.extract                                          │
-├─────────────────────────────────────────────────────────────┤
-│  Discovers generated gettext() calls                         │
-│  Writes to priv/gettext/default.pot                          │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Runtime (Server)                                             │
-├─────────────────────────────────────────────────────────────┤
-│  SvelteStrings.all_translations("en")                        │
-│  └─ Returns: %{"Hello" => "Hello", ...}                      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Runtime (Client/Browser)                                     │
-├─────────────────────────────────────────────────────────────┤
-│  TypeScript functions handle:                                │
-│  ├─ String interpolation (%{name})                           │
-│  └─ Plural forms (count-based)                               │
-└─────────────────────────────────────────────────────────────┘
-```
+### Compile Time (Elixir)
+
+When you run `mix compile`:
+
+1. **Scan Svelte files** - `LiveSvelteGettext.Extractor` scans all `.svelte` files in your configured path
+2. **Extract strings** - Regex patterns find `gettext()` and `ngettext()` calls with file:line metadata
+3. **Generate code** - `LiveSvelteGettext.Compiler` generates:
+   - `@external_resource` attributes (triggers recompilation when files change)
+   - Calls to `CustomExtractor.extract_with_location/8` (preserves source locations)
+   - An `all_translations/1` function for runtime use
+   - A `__lsg_metadata__/0` debug function
+
+↓
+
+### Translation Extraction
+
+When you run `mix gettext.extract`:
+
+4. **Discover strings** - Gettext finds the generated extraction calls
+5. **Inject references** - `CustomExtractor` modifies `Macro.Env` to inject actual Svelte file:line
+6. **Write POT files** - Creates/updates `priv/gettext/default.pot` with accurate references:
+   ```
+   #: assets/svelte/components/Button.svelte:42
+   msgid "Save Profile"
+   ```
+
+↓
+
+### Runtime (Server)
+
+When a page loads:
+
+7. **Fetch translations** - The `<.svelte_translations />` component calls `YourModule.all_translations(locale)`
+8. **Render JSON** - Translations are rendered in a `<script id="svelte-translations">` tag
+9. **Register hook** - The `LiveSvelteGettextInit` Phoenix hook is mounted
+
+↓
+
+### Runtime (Client/Browser)
+
+10. **Initialize** - The hook reads the JSON and calls `initTranslations(data)`
+11. **Use translations** - Svelte components call `gettext()` and `ngettext()`
+12. **Interpolate** - The TypeScript library handles variable substitution and pluralization
 
 ## API Documentation
 
@@ -439,6 +520,49 @@ mix test test/live_svelte_gettext/extractor_test.exs
 mix coveralls.html
 open cover/excoveralls.html
 ```
+
+## Project Status & Future
+
+### Current Status
+
+This is a **proof of concept** extracted from a real project where it solves a practical need. It works well for the use case it was designed for, but has not been widely tested across different Phoenix/Svelte setups.
+
+**What's working:**
+- Compile-time extraction from Svelte files
+- Integration with `mix gettext.extract`
+- Accurate source references in `.pot` files
+- Runtime translations with interpolation and pluralization
+- Automatic initialization via Phoenix LiveView hooks
+- Igniter-based installation
+
+**Known limitations:**
+- Simple English plural rules only (no CLDR plural forms for other languages)
+- Regex-based extraction (won't handle all edge cases like template literals or computed strings)
+- Not tested with domains (`dgettext`) or contexts (`pgettext`)
+
+### Sharing with live_svelte Community
+
+This POC was created in response to [live_svelte#120](https://github.com/woutdp/live_svelte/issues/120). The goal is to:
+
+1. **Share the approach** - Show that compile-time macro extraction can work
+2. **Get feedback** - Learn if this solves the problem for others
+3. **Discuss integration** - Potentially merge concepts into live_svelte or keep as separate library
+
+If you're interested in using this or have ideas for improvement, please open an issue or discussion!
+
+### Possible Future Directions
+
+**If this POC proves useful:**
+- CLDR plural rules for accurate pluralization across languages
+- Domain and context support (dgettext, pgettext)
+- More robust parsing (proper Svelte AST instead of regex)
+- Published npm package
+- Support for other frontend frameworks (React, Vue, etc.)
+
+**Alternative approaches to consider:**
+- Babel/SWC plugin for extraction (more accurate than regex)
+- Build-time JSON generation (simpler but requires committing files)
+- Integration directly into live_svelte (would benefit all users)
 
 ## For Library Authors
 

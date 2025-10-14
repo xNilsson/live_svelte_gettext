@@ -1,10 +1,23 @@
 defmodule LiveSvelteGettext do
   @moduledoc """
-  Zero-maintenance i18n for Phoenix + Svelte applications.
+  Compile-time translation extraction for Phoenix + Svelte applications.
 
-  This module provides compile-time extraction of translation strings from
-  Svelte components and generates the necessary code to make translations
-  available at runtime.
+  This module provides a proof-of-concept solution for using Phoenix Gettext
+  in Svelte components. It was extracted from a real project and addresses
+  the challenge raised in [live_svelte#120](https://github.com/woutdp/live_svelte/issues/120).
+
+  ## The Approach
+
+  Uses Elixir macros at compile time to:
+  - Scan `.svelte` files for `gettext()` and `ngettext()` calls
+  - Generate Elixir code that integrates with `mix gettext.extract`
+  - Preserve accurate source references (e.g., `assets/svelte/Button.svelte:42`)
+  - Runtime translations:
+    - `LiveSvelteGettextInit` hook and `.svelte_translation` components adds translations to svelte files.
+    - Translation access via `all_translations/1`
+
+  No generated files are committed - everything happens at compile time using
+  `@external_resource` for automatic recompilation when Svelte files change.
 
   ## Quick Start
 
@@ -54,18 +67,20 @@ defmodule LiveSvelteGettext do
 
   ## How It Works
 
-  At compile time:
-  1. Scans all `.svelte` files in `svelte_path`
-  2. Extracts translation strings using `gettext()` and `ngettext()` calls
-  3. Generates code that `mix gettext.extract` can discover
-  4. Generates an `all_translations/1` function for runtime use
-  5. Sets up `@external_resource` to recompile when Svelte files change
+  **Compile time** (when you run `mix compile`):
+  1. The `use LiveSvelteGettext` macro scans all `.svelte` files in `svelte_path`
+  2. Regex patterns extract `gettext()` and `ngettext()` calls with file:line metadata
+  3. Generated Elixir code includes:
+     - `@external_resource` attributes (triggers recompilation on file changes)
+     - Calls to `CustomExtractor.extract_with_location/8` (preserves Svelte source locations)
+     - An `all_translations/1` function for runtime
+  4. When you run `mix gettext.extract`, it discovers these generated calls
+  5. The `CustomExtractor` modifies `Macro.Env` to inject accurate Svelte file:line into `.pot` files
 
-  At runtime:
-  1. `<.svelte_translations />` component fetches translations from your Gettext module
-  2. Renders them as JSON in a `<script>` tag
-  3. `LiveSvelteGettextInit` Phoenix hook reads the JSON and initializes translations
-  4. Your Svelte components can immediately use `gettext()` and `ngettext()`
+  **Runtime** (when the page loads):
+  1. The `<.svelte_translations />` component fetches translations and renders JSON in a `<script>` tag
+  2. The `LiveSvelteGettextInit` Phoenix hook reads the JSON and initializes translations
+  3. Svelte components call `gettext()` and `ngettext()` - interpolation happens in the browser
 
   ## Configuration Options
 

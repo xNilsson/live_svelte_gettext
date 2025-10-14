@@ -10,8 +10,8 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
   1. Detect your Gettext backend automatically
   2. Detect your Svelte directory (or prompt if multiple found)
   3. Create a SvelteStrings module with the correct configuration
-  4. Copy the TypeScript translation library to your assets directory
-  5. Provide usage instructions
+  4. Add application configuration to config/config.exs
+  5. Provide installation instructions for the npm package
 
   ## Options
 
@@ -26,6 +26,12 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
 
       # Manual configuration
       $ mix igniter.install live_svelte_gettext --gettext-backend MyAppWeb.Gettext --svelte-path assets/svelte
+
+  ## After Installation
+
+  Don't forget to install the npm package:
+
+      $ cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
   """
 
   use Igniter.Mix.Task
@@ -52,7 +58,6 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
     |> detect_or_prompt_configuration(options)
     |> add_application_config()
     |> create_svelte_strings_module()
-    |> copy_typescript_library()
     |> add_usage_notice()
   end
 
@@ -289,75 +294,6 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
     end
   end
 
-  ## File Operations
-
-  defp copy_typescript_library(igniter) do
-    # Source: TypeScript library in our priv directory (or assets/js)
-    # We need to determine where our library code lives
-    source_path = find_typescript_library_source()
-
-    # Destination: User's assets/js directory
-    dest_path = "assets/js/translations.ts"
-
-    case source_path do
-      nil ->
-        Igniter.add_warning(
-          igniter,
-          """
-          Could not find TypeScript translation library to copy.
-
-          Please manually copy the library from:
-          https://github.com/xnilsson/live_svelte_gettext/blob/main/assets/js/translations.ts
-
-          To: #{dest_path}
-          """
-        )
-
-        igniter
-
-      source ->
-        # Check if destination already exists
-        if File.exists?(dest_path) do
-          Igniter.add_notice(
-            igniter,
-            """
-            File #{dest_path} already exists. Skipping copy.
-
-            If you want to update it, please remove the existing file first.
-            """
-          )
-
-          igniter
-        else
-          # Copy the file
-          case File.read(source) do
-            {:ok, content} ->
-              Igniter.create_new_file(igniter, dest_path, content)
-
-            {:error, reason} ->
-              Igniter.add_warning(
-                igniter,
-                "Failed to read TypeScript library: #{inspect(reason)}"
-              )
-
-              igniter
-          end
-        end
-    end
-  end
-
-  defp find_typescript_library_source do
-    # Try to find the TypeScript library in the package
-    possible_paths = [
-      # When installed as a dependency
-      Path.join([:code.priv_dir(:live_svelte_gettext), "static", "translations.ts"]),
-      # When developing locally
-      Path.join([File.cwd!(), "assets", "js", "translations.ts"])
-    ]
-
-    Enum.find(possible_paths, &File.exists?/1)
-  end
-
   ## User Instructions
 
   defp add_usage_notice(igniter) do
@@ -381,7 +317,27 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
 
       Next steps:
 
-      1. Import the component in your view helpers:
+      1. Install the npm package:
+
+          # Copy from the Hex dependency (recommended for now)
+          $ cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
+
+          # Or once published to npm:
+          $ npm install live-svelte-gettext
+
+      2. Register the Phoenix hook in assets/js/app.js:
+
+          import { getHooks } from "live-svelte";
+          import { LiveSvelteGettextInit } from "live-svelte-gettext";
+
+          const liveSocket = new LiveSocket("/live", Socket, {
+            hooks: {
+              ...getHooks(Components),
+              LiveSvelteGettextInit,  // Required!
+            }
+          });
+
+      3. Import the component in your view helpers:
 
           # In lib/my_app_web.ex
           def html do
@@ -391,24 +347,23 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
             end
           end
 
-      2. Add the translation injection component to your layout or LiveView template:
+      4. Add the translation injection component to your layout or LiveView template:
 
           # In your layout or LiveView template (before Svelte components)
           <.svelte_translations />
 
           <.svelte name="MyComponent" props={%{...}} />
 
-      3. In your Svelte components, use the translation functions:
+      5. Use translations in your Svelte components:
 
           <script>
-            import { gettext, ngettext } from './translations'
-
-            // Translations are automatically available from the script tag
+            import { gettext, ngettext } from 'live-svelte-gettext'
           </script>
 
           <p>{gettext("Hello, world!")}</p>
+          <p>{ngettext("1 item", "%{count} items", 5)}</p>
 
-      4. Extract and merge translations:
+      6. Extract and merge translations:
 
           $ mix gettext.extract
           $ mix gettext.merge priv/gettext
