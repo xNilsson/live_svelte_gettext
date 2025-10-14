@@ -80,20 +80,282 @@ curl -o assets/js/translations.ts https://raw.githubusercontent.com/xnilsson/liv
 
 ## Quick Start
 
-[Step-by-step guide]
+Once installed, you can start using translations in your Svelte components immediately.
+
+### 1. Use translations in your Svelte components
+
+```svelte
+<script>
+  import { gettext, ngettext } from './translations.ts'
+  export let translations
+
+  // Initialize translations when they arrive from the server
+  $: if (translations) {
+    initTranslations(translations)
+  }
+
+  let itemCount = 5
+</script>
+
+<div>
+  <h1>{gettext("Welcome to our app")}</h1>
+  <p>{gettext("Hello, %{name}", { name: "World" })}</p>
+  <p>{ngettext("1 item", "%{count} items", itemCount)}</p>
+</div>
+```
+
+### 2. Pass translations from your LiveView
+
+```elixir
+defmodule MyAppWeb.PageLive do
+  use MyAppWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    # Get translations for the current locale
+    locale = Gettext.get_locale(MyAppWeb.Gettext)
+    translations = MyAppWeb.SvelteStrings.all_translations(locale)
+
+    {:ok, assign(socket, :translations, translations)}
+  end
+end
+```
+
+### 3. Extract and translate
+
+```bash
+# Extract translation strings from both Elixir and Svelte files
+mix gettext.extract
+
+# Merge into locale files
+mix gettext.merge priv/gettext
+
+# Edit your .po files to add translations
+# Then your Svelte components will automatically use the translated strings!
+```
 
 ## How It Works
 
-[Architecture explanation]
+LiveSvelte Gettext uses a compile-time approach to make i18n seamless:
+
+### Compile Time (Zero Maintenance)
+
+1. **Extraction**: When you compile your app, `LiveSvelteGettext` scans all `.svelte` files in your configured directory
+2. **Code Generation**: It generates Elixir `gettext()` and `ngettext()` calls in your `SvelteStrings` module
+3. **Discovery**: When you run `mix gettext.extract`, these generated calls are discovered just like regular Gettext usage
+4. **Recompilation**: Uses `@external_resource` to automatically recompile when Svelte files change
+
+### Runtime (Fast and Simple)
+
+1. **Translation Map**: Your `SvelteStrings` module has an `all_translations/1` function that returns a map of all translations
+2. **Server → Client**: You pass this map from your LiveView to your Svelte component
+3. **Client-Side**: The TypeScript library handles interpolation and pluralization in the browser
+
+### No Generated Files
+
+Unlike other i18n solutions, there are no intermediate JSON or JavaScript files to commit. Everything is extracted and compiled at build time.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Compile Time (Elixir)                                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  1. Scan *.svelte files                                      │
+│     └─ Extract gettext() and ngettext() calls                │
+│                                                               │
+│  2. Generate Elixir code                                     │
+│     ├─ gettext("string") calls for extraction                │
+│     └─ all_translations/1 runtime function                   │
+│                                                               │
+│  3. Set @external_resource                                   │
+│     └─ Recompile when Svelte files change                    │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ mix gettext.extract                                          │
+├─────────────────────────────────────────────────────────────┤
+│  Discovers generated gettext() calls                         │
+│  Writes to priv/gettext/default.pot                          │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Runtime (Server)                                             │
+├─────────────────────────────────────────────────────────────┤
+│  SvelteStrings.all_translations("en")                        │
+│  └─ Returns: %{"Hello" => "Hello", ...}                      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Runtime (Client/Browser)                                     │
+├─────────────────────────────────────────────────────────────┤
+│  TypeScript functions handle:                                │
+│  ├─ String interpolation (%{name})                           │
+│  └─ Plural forms (count-based)                               │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## API Documentation
 
-[Link to HexDocs]
+Full API documentation is available on [HexDocs](https://hexdocs.pm/livesvelte_gettext).
+
+### Key Modules
+
+- **`LiveSvelteGettext`** - Main module to `use` in your Gettext backend
+- **`LiveSvelteGettext.Extractor`** - Extracts translation strings from Svelte files
+- **`LiveSvelteGettext.Compiler`** - Generates code at compile time
+
+### TypeScript API
+
+```typescript
+// Initialize translations (call once with data from server)
+initTranslations(translations: Record<string, string>): void
+
+// Get translated string
+gettext(key: string, vars?: Record<string, string | number>): string
+
+// Get translated string with pluralization
+ngettext(singular: string, plural: string, count: number, vars?: Record<string, string | number>): string
+
+// Check if initialized
+isInitialized(): boolean
+
+// Reset (useful for testing)
+resetTranslations(): void
+```
+
+## Troubleshooting
+
+### Translations not updating after changing Svelte files
+
+Make sure your Svelte files are being watched for changes. Run:
+
+```bash
+mix clean
+mix compile
+```
+
+The module should recompile automatically when Svelte files change due to `@external_resource`.
+
+### TypeScript library not found
+
+If the installer didn't copy the TypeScript library, you can manually download it:
+
+```bash
+curl -o assets/js/translations.ts https://raw.githubusercontent.com/xnilsson/livesvelte_gettext/main/assets/js/translations.ts
+```
+
+### Gettext.extract not finding Svelte strings
+
+Make sure your `SvelteStrings` module is compiling successfully. Check for compilation errors:
+
+```bash
+mix compile
+```
+
+If there are no errors, verify that strings are being extracted:
+
+```elixir
+# In IEx
+iex> MyAppWeb.SvelteStrings.__lsg_metadata__()
+%{
+  extractions: [...],  # Should list your strings
+  svelte_files: [...], # Should list your .svelte files
+  gettext_backend: MyAppWeb.Gettext
+}
+```
+
+### Translations showing keys instead of translated text
+
+This usually means:
+
+1. You haven't run `mix gettext.extract` and `mix gettext.merge` yet
+2. The translations haven't been added to your `.po` files
+3. The locale isn't set correctly
+
+Check your locale:
+
+```elixir
+Gettext.get_locale(MyAppWeb.Gettext)
+```
+
+### Escaped quotes not working in Svelte
+
+Use the appropriate escape sequence:
+
+```svelte
+{gettext("She said, \"Hello\"")}  <!-- Double quotes inside double quotes -->
+{gettext('He\'s here')}            <!-- Single quote inside single quotes -->
+```
+
+### Module not recompiling when expected
+
+Force a recompilation:
+
+```bash
+mix clean
+mix deps.clean livesvelte_gettext
+mix deps.get
+mix compile
+```
 
 ## Contributing
 
-[Guidelines]
+Contributions are welcome! Here's how you can help:
+
+1. **Report bugs**: Open an issue with a minimal reproduction case
+2. **Suggest features**: Open an issue describing the use case and proposed API
+3. **Submit pull requests**:
+   - Fork the repository
+   - Create a feature branch
+   - Add tests for new functionality
+   - Ensure all tests pass with `mix test`
+   - Run `mix format` before committing
+   - Open a PR with a clear description
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/xnilsson/livesvelte_gettext.git
+cd livesvelte_gettext
+
+# Install dependencies
+mix deps.get
+
+# Run tests
+mix test
+
+# Run tests with coverage
+mix coveralls.html
+
+# Format code
+mix format
+
+# Type checking
+mix dialyzer
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+mix test
+
+# Run specific test file
+mix test test/livesvelte_gettext/extractor_test.exs
+
+# Run with coverage
+mix coveralls.html
+open cover/excoveralls.html
+```
 
 ## License
 
-MIT License - see LICENSE file
+MIT License - see [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Christopher Nilsson

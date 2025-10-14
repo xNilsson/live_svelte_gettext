@@ -85,10 +85,17 @@ defmodule LiveSvelteGettext.MixProject do
         ],
         Internal: [
           LiveSvelteGettext.Extractor,
-          LiveSvelteGettext.Compiler,
-          LiveSvelteGettext.Runtime
+          LiveSvelteGettext.Compiler
+        ],
+        Tasks: [
+          Mix.Tasks.LivesvelteGettext.Install
         ]
-      ]
+      ],
+      groups_for_extras: [
+        "Getting Started": ["README.md"],
+        "Project Info": ["CHANGELOG.md", "LICENSE"]
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 end

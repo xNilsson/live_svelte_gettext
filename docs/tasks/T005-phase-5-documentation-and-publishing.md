@@ -10,6 +10,13 @@
 
 Write comprehensive documentation and publish the library to Hex.pm (and optionally npm for the TypeScript client). This makes the library usable by the community.
 
+This should be done in two steps.
+Step 1: Documentation.
+Step 2: Publishing.
+
+After step 1 I will try to use this library on a local project. When I've verified that 
+it works as expected and we have iterated on impromevents (if any) then we can move on to step 2
+
 ## Acceptance Criteria
 
 ### Documentation
