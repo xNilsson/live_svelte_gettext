@@ -1,22 +1,13 @@
-# LiveSvelteGettext Client
+# LiveSvelteGettext
 
 TypeScript client library for runtime translations in Svelte components. Part of the [LiveSvelteGettext](https://github.com/xnilsson/live_svelte_gettext) project.
-
-## Features
-
-- **Type-safe translations** - Full TypeScript support with type definitions
-- **Variable interpolation** - Replace `%{var}` placeholders with dynamic values
-- **Plural handling** - Simple English plural rules (count === 1 ? singular : plural)
-- **Fallback support** - Returns the key if translation not found
-- **Zero dependencies** - Lightweight and fast
-- **100% test coverage** - Thoroughly tested with 48+ test cases
 
 ## Installation
 
 This library is typically installed automatically by the `live_svelte_gettext` Elixir package. If you need to install it manually:
 
 ```bash
-npm install live-svelte-gettext-client
+npm install live-svelte-gettext
 ```
 
 Or copy `translations.ts` directly into your Phoenix project at `assets/js/translations.ts`.

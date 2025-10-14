@@ -126,38 +126,6 @@ defmodule Mix.Tasks.LiveSvelteGettext.InstallTest do
     end
   end
 
-  describe "TypeScript library copying" do
-    test "checks if source library exists" do
-      # The library should be in priv/static/translations.ts
-      # Get the project root directory
-      project_root = Path.expand("../../..", __DIR__)
-      dev_path = Path.join([project_root, "priv", "static", "translations.ts"])
-
-      assert File.exists?(dev_path),
-             "TypeScript library source not found at #{dev_path}"
-    end
-
-    test "handles existing translations.ts file" do
-      # The install task checks File.exists?(dest_path) before copying
-      # This test verifies the expected behavior when the file already exists
-
-      test_file_path = Path.join(System.tmp_dir!(), "test_translations.ts")
-
-      # Create a file to simulate existing translations.ts
-      File.write!(test_file_path, "// Existing content")
-
-      # Verify the file exists (simulating the condition in copy_typescript_library/1)
-      assert File.exists?(test_file_path)
-
-      # The installer should skip copying when this condition is true
-      # (This tests the logic without actually running the full Igniter task)
-
-      # Clean up
-      File.rm!(test_file_path)
-      refute File.exists?(test_file_path)
-    end
-  end
-
   describe "module creation" do
     test "generates valid module syntax" do
       # Test that the generated module code is valid Elixir

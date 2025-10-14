@@ -1,10 +1,12 @@
 # T010: Auto-Initialize Translations in Svelte Components
 
-**Status:** In Progress
+> **⚠️ SUPERSEDED:** This Phoenix hook-based approach was implemented in v0.1.0 but replaced in v0.1.1 with lazy initialization (no hooks required). See CHANGELOG.md for details. This document is kept for historical reference.
+
+**Status:** Completed (Superseded)
 **Phase:** 3 - TypeScript Client Library
 **Assignee:** @nille + @claude
 **Created:** 2025-10-14
-**Completed:**
+**Completed:** 2025-10-14
 
 ## Description
 

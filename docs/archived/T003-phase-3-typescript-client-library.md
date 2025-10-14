@@ -124,7 +124,7 @@ ngettext(singular: string, plural: string, count: number, vars?): string
 - Node environment
 
 **Package:** `assets/package.json`
-- Name: live-svelte-gettext-client
+- Name: live-svelte-gettext
 - Version: 0.1.0
 - Type: module (ESM)
 - Main: ./dist/translations.js

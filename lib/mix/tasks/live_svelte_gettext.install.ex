@@ -10,8 +10,10 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
   1. Detect your Gettext backend automatically
   2. Detect your Svelte directory (or prompt if multiple found)
   3. Create a SvelteStrings module with the correct configuration
-  4. Add application configuration to config/config.exs
-  5. Provide installation instructions for the npm package
+  4. Add `use LiveSvelteGettext` to your Gettext backend
+  5. Add `import LiveSvelteGettext.Components` to your web module
+  6. Add application configuration to config/config.exs
+  7. Provide next steps for completing the installation
 
   ## Options
 
@@ -29,9 +31,15 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
 
   ## After Installation
 
-  Don't forget to install the npm package:
+  You can optionally install the npm package or use the bundled files:
 
-      $ cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
+  ```bash
+  # Option A: Install from npm (recommended)
+  npm install live-svelte-gettext
+
+  # Option B: Use bundled files (no installation needed)
+  # Available at deps/live_svelte_gettext/assets/dist/
+  ```
   """
 
   use Igniter.Mix.Task
@@ -58,6 +66,8 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
     |> detect_or_prompt_configuration(options)
     |> add_application_config()
     |> create_svelte_strings_module()
+    |> add_use_to_gettext_backend()
+    |> add_component_import_to_web_module()
     |> add_usage_notice()
   end
 
@@ -138,6 +148,10 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
   defp find_gettext_backends(_igniter) do
     # Search for modules that define Gettext backends by looking for
     # "use Gettext.Backend" in .ex files
+    #
+    # IMPORTANT: We must ONLY match "use Gettext.Backend", NOT "use Gettext,"
+    # because many Phoenix modules use Gettext as a consumer (e.g., web modules)
+    # but are not themselves backends.
     case File.ls("lib") do
       {:ok, _} ->
         # Find all .ex files
@@ -145,9 +159,9 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
         |> Enum.filter(fn file ->
           case File.read(file) do
             {:ok, content} ->
-              # Look for "use Gettext.Backend" or "use Gettext, "
-              String.contains?(content, "use Gettext.Backend") ||
-                String.contains?(content, "use Gettext,")
+              # Look ONLY for "use Gettext.Backend" - actual backend definition
+              # Do NOT match "use Gettext," which is for consumers
+              String.contains?(content, "use Gettext.Backend")
 
             _ ->
               false
@@ -233,17 +247,57 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
   defp derive_module_name(nil), do: nil
 
   defp derive_module_name(backend) when is_atom(backend) do
-    # Convert MyAppWeb.Gettext -> MyAppWeb.SvelteStrings
+    # Convert MyAppWeb.Gettext -> MyAppWeb.Gettext.SvelteStrings
+    # This should be a submodule of the Gettext backend
+    Module.concat(backend, SvelteStrings)
+  end
+
+  defp extract_otp_app(backend) when is_atom(backend) do
+    # Try to find the backend's source file and extract otp_app
+    backend_path =
+      backend
+      |> Module.split()
+      |> Enum.map(&Macro.underscore/1)
+      |> Path.join()
+
+    # Check common locations
+    possible_paths = [
+      "lib/#{backend_path}.ex",
+      "lib/#{backend_path}/gettext.ex"
+    ]
+
+    otp_app =
+      Enum.find_value(possible_paths, fn path ->
+        case File.read(path) do
+          {:ok, content} ->
+            # Extract otp_app from "use Gettext.Backend, otp_app: :my_app"
+            case Regex.run(~r/use\s+Gettext\.Backend,\s+otp_app:\s+:(\w+)/, content) do
+              [_, app] -> String.to_atom(app)
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+      end)
+
+    # Fallback: derive from module name (MyAppWeb.Gettext -> :my_app)
+    otp_app || derive_otp_app_from_module(backend)
+  end
+
+  defp derive_otp_app_from_module(backend) do
+    # MyAppWeb.Gettext -> :my_app
     backend
     |> Module.split()
-    |> List.replace_at(-1, "SvelteStrings")
-    |> Module.concat()
+    |> List.first()
+    |> Macro.underscore()
+    |> String.to_atom()
   end
 
   ## Application Configuration
 
   defp add_application_config(igniter) do
-    backend = Igniter.assign(igniter, :lsg_backend)
+    backend = igniter.assigns[:lsg_backend]
 
     if is_nil(backend) do
       igniter
@@ -262,44 +316,214 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
   ## Module Creation
 
   defp create_svelte_strings_module(igniter) do
-    backend = Igniter.assign(igniter, :lsg_backend)
-    svelte_path = Igniter.assign(igniter, :lsg_svelte_path)
-    module_name = Igniter.assign(igniter, :lsg_module_name)
+    backend = igniter.assigns[:lsg_backend]
+    svelte_path = igniter.assigns[:lsg_svelte_path]
+    module_name = igniter.assigns[:lsg_module_name]
 
     if is_nil(backend) || is_nil(svelte_path) || is_nil(module_name) do
       igniter
     else
-      # Generate module content
-      module_code = """
-      defmodule #{inspect(module_name)} do
-        @moduledoc \"\"\"
-        Translation strings extracted from Svelte components.
+      # Extract otp_app from the backend module
+      otp_app = extract_otp_app(backend)
 
-        This module is automatically managed by LiveSvelteGettext.
-        \"\"\"
+      # Generate module content (just the body, not the defmodule wrapper)
+      module_contents = """
+      @moduledoc \"\"\"
+      Translation strings extracted from Svelte components.
 
-        use Gettext.Backend, otp_app: #{inspect(backend.__gettext__(:otp_app))}
-        use LiveSvelteGettext,
-          gettext_backend: #{inspect(backend)},
-          svelte_path: "#{svelte_path}"
-      end
+      This module is automatically managed by LiveSvelteGettext.
+      \"\"\"
+
+      use Gettext.Backend, otp_app: #{inspect(otp_app)}
+      use LiveSvelteGettext,
+        gettext_backend: #{inspect(backend)},
+        svelte_path: "#{svelte_path}"
       """
 
       Igniter.Project.Module.create_module(
         igniter,
         module_name,
-        module_code,
-        :source_folder
+        module_contents
       )
     end
+  end
+
+  # Test helper functions (exposed for testing only)
+  # These should be @doc false to indicate they're not part of the public API
+  @doc false
+  def derive_module_name_test(backend), do: derive_module_name(backend)
+
+  @doc false
+  def add_component_import_test(content), do: add_component_import(content)
+
+  @doc false
+  def find_gettext_backends_test(igniter), do: find_gettext_backends(igniter)
+
+  ## Gettext Backend Integration
+
+  defp add_use_to_gettext_backend(igniter) do
+    backend = igniter.assigns[:lsg_backend]
+    svelte_path = igniter.assigns[:lsg_svelte_path]
+
+    if is_nil(backend) || is_nil(svelte_path) do
+      igniter
+    else
+      # Find the Gettext backend file
+      backend_path =
+        backend
+        |> Module.split()
+        |> Enum.map(&Macro.underscore/1)
+        |> Path.join()
+        |> then(&"lib/#{&1}.ex")
+
+      if File.exists?(backend_path) do
+        case File.read(backend_path) do
+          {:ok, content} ->
+            if String.contains?(content, "use LiveSvelteGettext") do
+              Igniter.add_notice(
+                igniter,
+                "LiveSvelteGettext already configured in #{backend}"
+              )
+
+              igniter
+            else
+              updated_content = add_use_live_svelte_gettext(content, backend, svelte_path)
+              File.write!(backend_path, updated_content)
+
+              Igniter.add_notice(
+                igniter,
+                "Added 'use LiveSvelteGettext' to #{backend}"
+              )
+
+              igniter
+            end
+
+          {:error, _} ->
+            Igniter.add_warning(igniter, "Could not read #{backend_path}")
+            igniter
+        end
+      else
+        Igniter.add_warning(
+          igniter,
+          "#{backend_path} not found. Please add 'use LiveSvelteGettext' to your Gettext backend manually."
+        )
+
+        igniter
+      end
+    end
+  end
+
+  defp add_use_live_svelte_gettext(content, backend, svelte_path) do
+    # Find the line with "use Gettext.Backend" and add our use statement after it
+    use_statement = """
+      use LiveSvelteGettext,
+        gettext_backend: #{inspect(backend)},
+        svelte_path: "#{svelte_path}"
+    """
+
+    String.replace(
+      content,
+      ~r/(use\s+Gettext\.Backend,.*\n)/,
+      "\\1#{use_statement}\n"
+    )
+  end
+
+  ## Elixir Web Module Integration
+
+  defp add_component_import_to_web_module(igniter) do
+    backend = igniter.assigns[:lsg_backend]
+
+    if is_nil(backend) do
+      igniter
+    else
+      # Derive web module name (MonsterConstructionWeb.Gettext -> MonsterConstructionWeb)
+      web_module =
+        backend
+        |> Module.split()
+        |> List.first()
+        |> then(&Module.concat([&1]))
+
+      web_module_path =
+        web_module
+        |> Module.split()
+        |> Enum.map(&Macro.underscore/1)
+        |> Path.join()
+        |> then(&"lib/#{&1}.ex")
+
+      if File.exists?(web_module_path) do
+        case File.read(web_module_path) do
+          {:ok, content} ->
+            if String.contains?(content, "LiveSvelteGettext.Components") do
+              Igniter.add_notice(
+                igniter,
+                "LiveSvelteGettext.Components already imported in #{web_module}"
+              )
+
+              igniter
+            else
+              updated_content = add_component_import(content)
+              File.write!(web_module_path, updated_content)
+
+              Igniter.add_notice(
+                igniter,
+                "Added LiveSvelteGettext.Components import to #{web_module}"
+              )
+
+              igniter
+            end
+
+          {:error, _} ->
+            Igniter.add_warning(igniter, "Could not read #{web_module_path}")
+            igniter
+        end
+      else
+        Igniter.add_warning(
+          igniter,
+          "#{web_module_path} not found. Please add 'import LiveSvelteGettext.Components' to your html/0 function manually."
+        )
+
+        igniter
+      end
+    end
+  end
+
+  defp add_component_import(content) do
+    # Check if already imported (idempotent)
+    if String.contains?(content, "LiveSvelteGettext.Components") do
+      content
+    else
+      # Add import to both html and live_view functions
+      content
+      |> add_import_to_html()
+      |> add_import_to_live_view()
+    end
+  end
+
+  defp add_import_to_html(content) do
+    # Find the html function's quote block and add the import
+    String.replace(
+      content,
+      ~r/(def\s+html\s+do\s+quote\s+do[^\n]*\n)/,
+      "\\1      import LiveSvelteGettext.Components\n"
+    )
+  end
+
+  defp add_import_to_live_view(content) do
+    # Find the live_view function's quote block and add the import
+    # live_view usually has: def live_view do\n    quote do\n
+    String.replace(
+      content,
+      ~r/(def\s+live_view\s+do\s+quote\s+do[^\n]*\n)/,
+      "\\1      import LiveSvelteGettext.Components\n"
+    )
   end
 
   ## User Instructions
 
   defp add_usage_notice(igniter) do
-    backend = Igniter.assign(igniter, :lsg_backend)
-    svelte_path = Igniter.assign(igniter, :lsg_svelte_path)
-    module_name = Igniter.assign(igniter, :lsg_module_name)
+    backend = igniter.assigns[:lsg_backend]
+    svelte_path = igniter.assigns[:lsg_svelte_path]
+    module_name = igniter.assigns[:lsg_module_name]
 
     Igniter.add_notice(
       igniter,
@@ -317,44 +541,20 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
 
       Next steps:
 
-      1. Install the npm package:
+      1. (Optional) Install the npm package or use bundled files:
 
-          # Copy from the Hex dependency (recommended for now)
-          $ cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
-
-          # Or once published to npm:
           $ npm install live-svelte-gettext
 
-      2. Register the Phoenix hook in assets/js/app.js:
+          Or use the bundled files at deps/live_svelte_gettext/assets/dist/
 
-          import { getHooks } from "live-svelte";
-          import { LiveSvelteGettextInit } from "live-svelte-gettext";
-
-          const liveSocket = new LiveSocket("/live", Socket, {
-            hooks: {
-              ...getHooks(Components),
-              LiveSvelteGettextInit,  // Required!
-            }
-          });
-
-      3. Import the component in your view helpers:
-
-          # In lib/my_app_web.ex
-          def html do
-            quote do
-              # ... existing code ...
-              import LiveSvelteGettext.Components
-            end
-          end
-
-      4. Add the translation injection component to your layout or LiveView template:
+      2. Add the translation component to your layout or LiveView templates:
 
           # In your layout or LiveView template (before Svelte components)
           <.svelte_translations />
 
           <.svelte name="MyComponent" props={%{...}} />
 
-      5. Use translations in your Svelte components:
+      3. Use translations in your Svelte components:
 
           <script>
             import { gettext, ngettext } from 'live-svelte-gettext'
@@ -363,7 +563,9 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
           <p>{gettext("Hello, world!")}</p>
           <p>{ngettext("1 item", "%{count} items", 5)}</p>
 
-      6. Extract and merge translations:
+          That's it! Translations automatically initialize on first use.
+
+      4. Extract and merge translations:
 
           $ mix gettext.extract
           $ mix gettext.merge priv/gettext

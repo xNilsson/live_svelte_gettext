@@ -13,7 +13,8 @@ defmodule LiveSvelteGettext do
   - Generate Elixir code that integrates with `mix gettext.extract`
   - Preserve accurate source references (e.g., `assets/svelte/Button.svelte:42`)
   - Runtime translations:
-    - `LiveSvelteGettextInit` hook and `.svelte_translation` components adds translations to svelte files.
+    - `.svelte_translations` component renders translations as JSON
+    - Lazy initialization on first `gettext()` or `ngettext()` call
     - Translation access via `all_translations/1`
 
   No generated files are committed - everything happens at compile time using
@@ -25,27 +26,23 @@ defmodule LiveSvelteGettext do
 
       mix igniter.install live_svelte_gettext
 
-  This automatically configures your Gettext module:
+  This automatically creates a separate module for Svelte translations:
 
-      defmodule MyAppWeb.Gettext do
+      defmodule MyAppWeb.Gettext.SvelteStrings do
         use Gettext.Backend, otp_app: :my_app
         use LiveSvelteGettext,
-          gettext_backend: __MODULE__,
+          gettext_backend: MyAppWeb.Gettext,
           svelte_path: "assets/svelte"
       end
 
-  ### 2. Register the Phoenix hook (required)
+  **Important:** Do not add `use LiveSvelteGettext` to your main Gettext backend
+  module, as this creates a circular dependency. Always use a separate module.
 
-  In your `assets/js/app.js`:
+  ### 2. Install NPM package
 
-      import { LiveSvelteGettextInit } from "live-svelte-gettext"
-
-      const liveSocket = new LiveSocket("/live", Socket, {
-        hooks: {
-          ...getHooks(Components),
-          LiveSvelteGettextInit,  // Add this line
-        }
-      })
+  ```bash
+  npm install live-svelte-gettext
+  ```
 
   ### 3. Add translations to your template
 
@@ -63,7 +60,7 @@ defmodule LiveSvelteGettext do
       <h1>{gettext("Welcome to our app")}</h1>
       <p>{gettext("Hello, %{name}", { name: "World" })}</p>
 
-  That's it! Translations are automatically initialized when the page loads.
+  That's it! Translations are automatically initialized on first use - zero setup!
 
   ## How It Works
 
@@ -79,7 +76,7 @@ defmodule LiveSvelteGettext do
 
   **Runtime** (when the page loads):
   1. The `<.svelte_translations />` component fetches translations and renders JSON in a `<script>` tag
-  2. The `LiveSvelteGettextInit` Phoenix hook reads the JSON and initializes translations
+  2. Translations are lazily initialized on first `gettext()` or `ngettext()` call
   3. Svelte components call `gettext()` and `ngettext()` - interpolation happens in the browser
 
   ## Configuration Options
@@ -116,7 +113,7 @@ defmodule LiveSvelteGettext do
 
       <h1>{gettext("Welcome")}</h1>
 
-  Note: Most users should use the automatic Phoenix hook approach shown in Quick Start.
+  Note: Most users should use the automatic lazy initialization shown in Quick Start.
   """
 
   @doc """

@@ -71,24 +71,12 @@ defmodule LiveSvelteGettext.Components do
   1. Fetches all translations from the configured Gettext module's `SvelteStrings`
      submodule (which is generated at compile time)
   2. Encodes them as JSON and injects a `<script type="application/json">` tag
-  3. Adds an invisible div with a Phoenix LiveView hook (`phx-hook="LiveSvelteGettextInit"`)
-     that automatically reads the JSON and initializes translations when the page mounts
+  3. Translations are automatically initialized on first use (lazy initialization)
 
-  ## Setup Required
+  ## Zero Setup Required
 
-  To use auto-initialization, you must register the `LiveSvelteGettextInit` hook
-  in your `assets/js/app.js`:
-
-      import { LiveSvelteGettextInit } from "live-svelte-gettext"
-
-      const liveSocket = new LiveSocket("/live", Socket, {
-        hooks: {
-          ...getHooks(Components),
-          LiveSvelteGettextInit,  // Add this line
-        }
-      })
-
-  The hook is exported from the `live-svelte-gettext` NPM package.
+  No hook registration or manual initialization needed! Translations automatically
+  initialize when you first call `gettext()` or `ngettext()` in your Svelte components.
 
   ## Examples
 
@@ -169,13 +157,6 @@ defmodule LiveSvelteGettext.Components do
     <script id={@id} type="application/json">
       <%= raw Jason.encode!(@translations) %>
     </script>
-    <div
-      id={"#{@id}-init"}
-      phx-hook="LiveSvelteGettextInit"
-      data-translations-id={@id}
-      style="display:none;"
-    >
-    </div>
     """
   end
 

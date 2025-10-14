@@ -94,6 +94,38 @@ function interpolate(text: string, vars?: TranslationVars): string {
 }
 
 /**
+ * Ensure translations are initialized before use.
+ *
+ * This function provides lazy initialization by automatically loading
+ * translations from the DOM on first use. It checks if translations are already
+ * loaded, and if not, attempts to load them from the script tag.
+ *
+ * @private
+ */
+function ensureInit(): void {
+  if (initialized) return;
+
+  // Check if we're in a browser environment
+  if (typeof document === 'undefined') return;
+
+  // Try to initialize from the DOM directly
+  const el = document.getElementById('svelte-translations');
+  if (el) {
+    try {
+      const data = JSON.parse(el.textContent || '{}');
+      initTranslations(data);
+    } catch (error) {
+      console.error('[LiveSvelteGettext] Failed to lazy-initialize translations:', error);
+    }
+  } else {
+    // Don't warn on every call - only if we really can't find translations
+    if (typeof window !== 'undefined' && document.readyState === 'complete') {
+      console.warn('[LiveSvelteGettext] Translation script tag not found: #svelte-translations');
+    }
+  }
+}
+
+/**
  * Get a translated string
  *
  * @param key - The translation key (usually the English string)
@@ -108,6 +140,7 @@ function interpolate(text: string, vars?: TranslationVars): string {
  * ```
  */
 export function gettext(key: string, vars?: TranslationVars): string {
+  ensureInit();
   const translated = translations[key] ?? key;
   return interpolate(translated, vars);
 }
@@ -138,6 +171,8 @@ export function ngettext(
   count: number,
   vars?: TranslationVars
 ): string {
+  ensureInit();
+
   // Determine which form to use (simple English rules)
   const key = count === 1 ? singular : plural;
 

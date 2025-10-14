@@ -1,7 +1,7 @@
 defmodule LiveSvelteGettext.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/xnilsson/live_svelte_gettext"
 
   def project do
@@ -13,7 +13,7 @@ defmodule LiveSvelteGettext.MixProject do
       deps: deps(),
 
       # Hex package metadata
-      description: "Zero-maintenance i18n for Phoenix + Svelte using compile-time extraction",
+      description: "Plugin adding i18n to live_svelte using compile-time extraction",
       package: package(),
 
       # Documentation
@@ -63,7 +63,9 @@ defmodule LiveSvelteGettext.MixProject do
       files: ~w(
         lib
         priv
-        assets/package
+        assets/dist
+        assets/package.json
+        assets/README.md
         .formatter.exs
         mix.exs
         README.md

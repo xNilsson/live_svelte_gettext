@@ -389,4 +389,157 @@ describe('Translation System', () => {
         .toBe('Hej Anna, du har 5');
     });
   });
+
+  describe('Lazy initialization', () => {
+    beforeEach(() => {
+      resetTranslations();
+      // Clean up any existing translation script tags
+      const existing = document.getElementById('svelte-translations');
+      if (existing) {
+        existing.remove();
+      }
+    });
+
+    it('should auto-initialize from DOM when gettext is called', () => {
+      // Create a mock translation script tag
+      const script = document.createElement('script');
+      script.id = 'svelte-translations';
+      script.type = 'application/json';
+      script.textContent = JSON.stringify({
+        'Hello': 'Hej',
+        'Welcome': 'Välkommen'
+      });
+      document.body.appendChild(script);
+
+      // Should not be initialized yet
+      expect(isInitialized()).toBe(false);
+
+      // Calling gettext should trigger lazy initialization
+      const result = gettext('Hello');
+      expect(result).toBe('Hej');
+      expect(isInitialized()).toBe(true);
+
+      // Subsequent calls should still work
+      expect(gettext('Welcome')).toBe('Välkommen');
+
+      // Cleanup
+      script.remove();
+    });
+
+    it('should auto-initialize from DOM when ngettext is called', () => {
+      // Create a mock translation script tag
+      const script = document.createElement('script');
+      script.id = 'svelte-translations';
+      script.type = 'application/json';
+      script.textContent = JSON.stringify({
+        '1 item': '1 objekt',
+        '%{count} items': '%{count} objekt'
+      });
+      document.body.appendChild(script);
+
+      // Should not be initialized yet
+      expect(isInitialized()).toBe(false);
+
+      // Calling ngettext should trigger lazy initialization
+      const result = ngettext('1 item', '%{count} items', 5);
+      expect(result).toBe('5 objekt');
+      expect(isInitialized()).toBe(true);
+
+      // Cleanup
+      script.remove();
+    });
+
+    it('should fallback to key when no translation script exists', () => {
+      // No script tag in DOM
+      expect(isInitialized()).toBe(false);
+
+      // Should return the key as fallback
+      const result = gettext('Missing Translation');
+      expect(result).toBe('Missing Translation');
+
+      // Should not initialize with empty translations
+      expect(isInitialized()).toBe(false);
+    });
+
+    it('should handle malformed JSON gracefully', () => {
+      // Create a script tag with invalid JSON
+      const script = document.createElement('script');
+      script.id = 'svelte-translations';
+      script.type = 'application/json';
+      script.textContent = '{invalid json}';
+      document.body.appendChild(script);
+
+      // Mock console.error to prevent test output pollution
+      const originalError = console.error;
+      const errors: any[] = [];
+      console.error = (...args: any[]) => errors.push(args);
+
+      // Should not throw, should fallback to key
+      const result = gettext('Hello');
+      expect(result).toBe('Hello');
+      expect(isInitialized()).toBe(false);
+
+      // Should have logged an error
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0][0]).toContain('Failed to lazy-initialize translations');
+
+      // Restore console.error
+      console.error = originalError;
+
+      // Cleanup
+      script.remove();
+    });
+
+    it('should only initialize once (idempotent)', () => {
+      // Create a mock translation script tag
+      const script = document.createElement('script');
+      script.id = 'svelte-translations';
+      script.type = 'application/json';
+      script.textContent = JSON.stringify({
+        'Hello': 'Hej'
+      });
+      document.body.appendChild(script);
+
+      // First call initializes
+      expect(gettext('Hello')).toBe('Hej');
+      expect(isInitialized()).toBe(true);
+
+      // Change the script content
+      script.textContent = JSON.stringify({
+        'Hello': 'Different'
+      });
+
+      // Second call should NOT re-initialize (uses cached translations)
+      expect(gettext('Hello')).toBe('Hej'); // Still the original
+      expect(isInitialized()).toBe(true);
+
+      // Cleanup
+      script.remove();
+    });
+
+    it('should work after explicit initialization', () => {
+      // Explicitly initialize
+      initTranslations({
+        'Hello': 'Hej'
+      });
+
+      expect(isInitialized()).toBe(true);
+      expect(gettext('Hello')).toBe('Hej');
+
+      // Create a script tag with different translations
+      const script = document.createElement('script');
+      script.id = 'svelte-translations';
+      script.type = 'application/json';
+      script.textContent = JSON.stringify({
+        'Hello': 'Different'
+      });
+      document.body.appendChild(script);
+
+      // Should NOT re-initialize from DOM (already initialized)
+      expect(gettext('Hello')).toBe('Hej');
+
+      // Cleanup
+      script.remove();
+    });
+  });
 });

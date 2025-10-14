@@ -196,7 +196,7 @@ defmodule LiveSvelteGettext.ComponentsTest do
       end
     end
 
-    test "includes Phoenix hook div for auto-initialization" do
+    test "renders only script tag (lazy initialization, no Phoenix hooks)" do
       original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
@@ -212,10 +212,10 @@ defmodule LiveSvelteGettext.ComponentsTest do
         # Should have the JSON script tag
         assert html =~ ~s(<script id="svelte-translations" type="application/json">)
 
-        # Should have the Phoenix hook div
-        assert html =~ ~s(phx-hook="LiveSvelteGettextInit")
-        assert html =~ ~s(data-translations-id="svelte-translations")
-        assert html =~ ~s(style="display:none;")
+        # Should NOT have any Phoenix hook elements (lazy initialization handles this)
+        refute html =~ ~s(phx-hook="LiveSvelteGettextInit")
+        refute html =~ ~s(data-translations-id="svelte-translations")
+        refute html =~ ~s(style="display:none;")
       after
         # Restore original config
         if original_config do
@@ -226,7 +226,7 @@ defmodule LiveSvelteGettext.ComponentsTest do
       end
     end
 
-    test "hook div uses custom id attribute" do
+    test "custom id only affects script tag" do
       original_config = Application.get_env(:live_svelte_gettext, :gettext)
 
       try do
@@ -239,10 +239,12 @@ defmodule LiveSvelteGettext.ComponentsTest do
           <.svelte_translations id="my-custom-id" />
           """)
 
-        # Should reference custom ID in hook data attribute
-        assert html =~ ~s(data-translations-id="my-custom-id")
-        # Hook div should have unique ID based on translations ID
-        assert html =~ ~s(id="my-custom-id-init")
+        # Should use custom ID in script tag
+        assert html =~ ~s(id="my-custom-id")
+
+        # Should NOT have any hook-related attributes (lazy initialization only)
+        refute html =~ ~s(data-translations-id="my-custom-id")
+        refute html =~ ~s(id="my-custom-id-init")
       after
         # Restore original config
         if original_config do

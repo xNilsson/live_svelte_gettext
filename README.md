@@ -31,11 +31,13 @@ No generated files are committed - everything happens at compile time using `@ex
 - **Accurate Source References**: `.pot` files show `assets/svelte/Button.svelte:42` instead of generated code locations
 - **Type-Safe Client**: TypeScript library for runtime translations
 - **Simple Setup**: Igniter installer handles configuration
-- **Automatic Initialization**: Phoenix LiveView hook injects translations on page load
+- **Automatic Initialization**: Translations automatically load on first use (no manual setup required)
 
 ## Installation
 
 ### Automatic Installation (Recommended)
+
+1. **Add the dependency** to your `mix.exs`:
 
 ```elixir
 # mix.exs
@@ -46,18 +48,34 @@ def deps do
 end
 ```
 
-Then run:
+2. **Run the Igniter installer**:
 
 ```bash
+mix deps.get
 mix igniter.install live_svelte_gettext
 ```
 
 The installer will:
 - Detect your Gettext backend automatically
 - Find your Svelte directory
-- Configure your Gettext module in `config/config.exs`
-- Create a `SvelteStrings` module with the correct configuration
-- Provide usage instructions for installing the npm package and registering the hook
+- Create a separate `SvelteStrings` module with the correct configuration
+- Add `import LiveSvelteGettext.Components` to your web module
+- Configure `config/config.exs`
+
+3. **(Optional) Install the npm package**:
+
+You can either install via npm or use the bundled files from the Hex package:
+
+```bash
+# Option A: Install from npm (recommended for version management)
+npm install live-svelte-gettext
+
+# Option B: Use bundled files (no installation needed)
+# The library is available at deps/live_svelte_gettext/assets/dist/
+# Your bundler should resolve it automatically
+```
+
+That's it! You're ready to use translations in your Svelte components - no JavaScript setup required!
 
 ### Manual Installation
 
@@ -73,13 +91,17 @@ def deps do
 end
 ```
 
-2. **Create a module** that uses `LiveSvelteGettext`:
+2. **Create a separate SvelteStrings module** (required to avoid circular dependency):
+
+**Important:** Do NOT add `use LiveSvelteGettext` to your main Gettext backend module.
+This creates a circular dependency that causes compilation errors. Always use a separate module.
 
 ```elixir
-# lib/my_app_web/svelte_strings.ex
-defmodule MyAppWeb.SvelteStrings do
+# lib/my_app_web/gettext/svelte_strings.ex
+defmodule MyAppWeb.Gettext.SvelteStrings do
   @moduledoc """
   Translation strings extracted from Svelte components.
+  This module is automatically managed by LiveSvelteGettext.
   """
 
   use Gettext.Backend, otp_app: :my_app
@@ -89,7 +111,7 @@ defmodule MyAppWeb.SvelteStrings do
 end
 ```
 
-3. **Configure the Gettext module** in `config/config.exs`:
+4. **Configure the Gettext module** in `config/config.exs`:
 
 ```elixir
 # config/config.exs
@@ -97,45 +119,17 @@ config :live_svelte_gettext,
   gettext: MyAppWeb.Gettext
 ```
 
-4. **Copy the NPM package** from the dependency:
-
-```bash
-# Copy the NPM package to your project
-cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
-```
-
-Or install from npm (once published):
-```bash
-npm install live-svelte-gettext
-```
-
-5. **Register the Phoenix hook** in `assets/js/app.js` (**required**):
-
-```javascript
-import { getHooks } from "live-svelte";
-import { LiveSvelteGettextInit } from "live-svelte-gettext";
-
-const liveSocket = new LiveSocket("/live", Socket, {
-  hooks: {
-    ...getHooks(Components),
-    LiveSvelteGettextInit,  // Required - initializes translations automatically
-  }
-});
-```
-
-> ⚠️ **Important**: The `LiveSvelteGettextInit` hook is **required** for translations to work. It automatically initializes translations when the page loads, eliminating the need for manual setup in Svelte components.
-
-## Quick Start
-
-Once installed, you can start using translations in your Svelte components immediately.
-
-### 1. Import the component helper
-
-To use the `<.svelte_translations />` component in your templates, add this import to your view helpers:
+5. **Add the import to your web module** (`lib/my_app_web.ex`):
 
 ```elixir
-# lib/my_app_web.ex
 def html do
+  quote do
+    # ... existing imports ...
+    import LiveSvelteGettext.Components
+  end
+end
+
+def live_view do
   quote do
     # ... existing imports ...
     import LiveSvelteGettext.Components
@@ -143,7 +137,23 @@ def html do
 end
 ```
 
-### 2. Inject translations into your template
+6. **(Optional) Install the npm package**:
+
+```bash
+# Option A: Install from npm
+npm install live-svelte-gettext
+
+# Option B: Use bundled files (no installation needed)
+# Available at deps/live_svelte_gettext/assets/dist/
+```
+
+**That's it!** Translations automatically initialize on first use.
+
+## Quick Start
+
+Once installed, you can start using translations in your Svelte components immediately.
+
+### 1. Inject translations into your template
 
 Add the `<.svelte_translations />` component in your layout or LiveView template. This component renders a `<script>` tag containing translations as JSON:
 
@@ -154,12 +164,12 @@ Add the `<.svelte_translations />` component in your layout or LiveView template
 <.svelte name="MyComponent" props={%{...}} />
 ```
 
-The component renders a `<script>` tag with translations as JSON. The `LiveSvelteGettextInit` hook (registered in step 5 of installation) automatically reads this data when the page loads and initializes the translation store for your Svelte components.
+The component renders a `<script>` tag with translations as JSON. Translations are automatically initialized on first use (lazy initialization).
 
 **How it works:**
 - Component fetches translations for the current locale from your Gettext backend
 - Renders them as JSON in a `<script id="svelte-translations">` tag
-- The Phoenix hook reads the JSON and initializes the translation functions
+- Translations are automatically initialized when you first call `gettext()` or `ngettext()`
 - Your Svelte components can now call `gettext()` and `ngettext()`
 
 **Advanced usage:**
@@ -175,7 +185,7 @@ The component renders a `<script>` tag with translations as JSON. The `LiveSvelt
 <.svelte_translations id="custom-translations" />
 ```
 
-### 3. Use translations in your Svelte components
+### 2. Use translations in your Svelte components
 
 ```svelte
 <script>
@@ -191,9 +201,9 @@ The component renders a `<script>` tag with translations as JSON. The `LiveSvelt
 </div>
 ```
 
-That's it! No manual initialization needed - the hook handles everything automatically.
+That's it! No manual initialization needed - translations are automatically initialized on first use.
 
-### 4. Extract and translate
+### 3. Extract and translate
 
 ```bash
 # Extract translation strings from both Elixir and Svelte files
@@ -224,7 +234,7 @@ This POC uses a compile-time macro approach to bridge Elixir's gettext and Svelt
 ### Runtime
 
 1. **Server Side**: The `<.svelte_translations />` component fetches translations and renders them as JSON in a `<script>` tag
-2. **Client Side**: The `LiveSvelteGettextInit` Phoenix hook reads the JSON and initializes the TypeScript translation store
+2. **Client Side**: Translations are automatically loaded from the script tag on first use (lazy initialization)
 3. **Svelte Components**: Call `gettext()` and `ngettext()` - interpolation and pluralization happen in the browser
 
 ### No Generated Files
@@ -255,7 +265,7 @@ This is a preference based on architectural feel rather than hard performance da
 - **No Committed Files**: Avoids generated `.ex` or `.json` files in version control
 - **Phoenix Integration**: Generated code naturally integrates with `mix gettext.extract`
 - **Automatic Updates**: `@external_resource` triggers recompilation when Svelte files change
-- **Zero Runtime Cost**: All extraction work happens once at compile time
+- **No Runtime Cost**: All extraction work happens once at compile time
 
 This keeps the developer workflow simple: write `gettext()` in Svelte, run `mix compile` and `mix gettext.extract`.
 
@@ -319,15 +329,16 @@ When a page loads:
 
 7. **Fetch translations** - The `<.svelte_translations />` component calls `YourModule.all_translations(locale)`
 8. **Render JSON** - Translations are rendered in a `<script id="svelte-translations">` tag
-9. **Register hook** - The `LiveSvelteGettextInit` Phoenix hook is mounted
 
 ↓
 
 ### Runtime (Client/Browser)
 
-10. **Initialize** - The hook reads the JSON and calls `initTranslations(data)`
-11. **Use translations** - Svelte components call `gettext()` and `ngettext()`
-12. **Interpolate** - The TypeScript library handles variable substitution and pluralization
+9. **Lazy initialization** - On first `gettext()` or `ngettext()` call, translations are automatically loaded from the script tag
+10. **Use translations** - Svelte components call `gettext()` and `ngettext()`
+11. **Interpolate** - The TypeScript library handles variable substitution and pluralization
+
+No Phoenix hooks required - everything initializes automatically!
 
 ## API Documentation
 
@@ -349,7 +360,7 @@ gettext(key: string, vars?: Record<string, string | number>): string
 // Get translated string with pluralization
 ngettext(singular: string, plural: string, count: number, vars?: Record<string, string | number>): string
 
-// Initialize translations manually (automatically called by LiveSvelteGettextInit hook)
+// Initialize translations manually (optional - automatically happens on first use)
 initTranslations(translations: Record<string, string>): void
 
 // Check if initialized
@@ -357,9 +368,6 @@ isInitialized(): boolean
 
 // Reset (useful for testing)
 resetTranslations(): void
-
-// Phoenix LiveView Hook (register in app.js)
-LiveSvelteGettextInit: PhoenixHook
 ```
 
 ## Troubleshooting
@@ -375,30 +383,22 @@ mix compile
 
 The module should recompile automatically when Svelte files change due to `@external_resource`.
 
-### NPM package not found / Import errors
+### Import errors
 
-If you get import errors for `live-svelte-gettext`, make sure the package is properly installed:
+If you get import errors for `live-svelte-gettext`, you have two options:
 
 ```bash
-# Copy from the Hex dependency
-cp -r deps/live_svelte_gettext/assets/package node_modules/live-svelte-gettext
-
-# Or once published to npm:
+# Option 1: Install via npm
 npm install live-svelte-gettext
+
+# Option 2: Use bundled files from Hex package
+# Ensure the dependency is fetched
+mix deps.get
+# The library is available at deps/live_svelte_gettext/assets/
+# Your bundler should resolve it automatically based on package.json
 ```
 
-Also verify that you've registered the hook in `assets/js/app.js`:
-
-```javascript
-import { LiveSvelteGettextInit } from "live-svelte-gettext";
-
-const liveSocket = new LiveSocket("/live", Socket, {
-  hooks: {
-    ...getHooks(Components),
-    LiveSvelteGettextInit,  // This line is required!
-  }
-});
-```
+Translations will automatically initialize on first use - no setup required!
 
 ### Gettext.extract not finding Svelte strings
 
@@ -532,7 +532,7 @@ This is a **proof of concept** extracted from a real project where it solves a p
 - Integration with `mix gettext.extract`
 - Accurate source references in `.pot` files
 - Runtime translations with interpolation and pluralization
-- Automatic initialization via Phoenix LiveView hooks
+- Automatic lazy initialization (no manual setup required)
 - Igniter-based installation
 
 **Known limitations:**
@@ -556,7 +556,6 @@ If you're interested in using this or have ideas for improvement, please open an
 - CLDR plural rules for accurate pluralization across languages
 - Domain and context support (dgettext, pgettext)
 - More robust parsing (proper Svelte AST instead of regex)
-- Published npm package
 - Support for other frontend frameworks (React, Vue, etc.)
 
 **Alternative approaches to consider:**
