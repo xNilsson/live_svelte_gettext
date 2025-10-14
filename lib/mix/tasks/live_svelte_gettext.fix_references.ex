@@ -57,11 +57,27 @@ defmodule Mix.Tasks.LiveSvelteGettext.FixReferences do
     gettext_path = opts[:gettext_path] || "priv/gettext"
     dry_run = opts[:dry_run] || false
 
-    if dry_run do
-      Mix.shell().info("Running in dry-run mode - no files will be modified")
-    end
+    announce_dry_run_if_needed(dry_run)
 
-    # Find all modules using LiveSvelteGettext
+    modules = find_and_validate_modules()
+    reference_map = build_and_announce_reference_map(modules)
+    po_files = find_and_validate_po_files(gettext_path)
+
+    {total_replacements, files_modified} =
+      Enum.reduce(po_files, {0, 0}, fn file, acc ->
+        process_and_report_file(file, reference_map, dry_run, acc)
+      end)
+
+    report_final_results(dry_run, total_replacements, files_modified)
+  end
+
+  defp announce_dry_run_if_needed(true) do
+    Mix.shell().info("Running in dry-run mode - no files will be modified")
+  end
+
+  defp announce_dry_run_if_needed(false), do: :ok
+
+  defp find_and_validate_modules do
     modules = find_lsg_modules()
 
     if Enum.empty?(modules) do
@@ -70,13 +86,16 @@ defmodule Mix.Tasks.LiveSvelteGettext.FixReferences do
     end
 
     Mix.shell().info("Found #{length(modules)} LiveSvelteGettext module(s)")
+    modules
+  end
 
-    # Build reference mapping from all modules
+  defp build_and_announce_reference_map(modules) do
     reference_map = build_reference_map(modules)
-
     Mix.shell().info("Built reference map with #{map_size(reference_map)} entries")
+    reference_map
+  end
 
-    # Find all .pot and .po files
+  defp find_and_validate_po_files(gettext_path) do
     po_files = find_po_files(gettext_path)
 
     if Enum.empty?(po_files) do
@@ -85,29 +104,26 @@ defmodule Mix.Tasks.LiveSvelteGettext.FixReferences do
     end
 
     Mix.shell().info("Found #{length(po_files)} PO/POT files to update")
+    po_files
+  end
 
-    # Process each file
-    {total_replacements, files_modified} =
-      Enum.reduce(po_files, {0, 0}, fn file, {total_count, file_count} ->
-        {replacements, modified?} = process_po_file(file, reference_map, dry_run)
+  defp report_final_results(true, total, files) do
+    Mix.shell().info("\nDry run complete: would have fixed #{total} references in #{files} files")
+  end
 
-        if replacements > 0 do
-          action = if dry_run, do: "Would update", else: "Updated"
-          Mix.shell().info("  #{action} #{file} (#{replacements} references)")
-          {total_count + replacements, file_count + if(modified?, do: 1, else: 0)}
-        else
-          {total_count, file_count}
-        end
-      end)
+  defp report_final_results(false, total, files) do
+    Mix.shell().info("\nSuccessfully fixed #{total} references in #{files} files")
+  end
 
-    if dry_run do
-      Mix.shell().info(
-        "\nDry run complete: would have fixed #{total_replacements} references in #{files_modified} files"
-      )
+  defp process_and_report_file(file, reference_map, dry_run, {total_count, file_count}) do
+    {replacements, modified?} = process_po_file(file, reference_map, dry_run)
+
+    if replacements > 0 do
+      action = if dry_run, do: "Would update", else: "Updated"
+      Mix.shell().info("  #{action} #{file} (#{replacements} references)")
+      {total_count + replacements, file_count + if(modified?, do: 1, else: 0)}
     else
-      Mix.shell().info(
-        "\nSuccessfully fixed #{total_replacements} references in #{files_modified} files"
-      )
+      {total_count, file_count}
     end
   end
 
@@ -252,41 +268,36 @@ defmodule Mix.Tasks.LiveSvelteGettext.FixReferences do
   defp fix_reference_line(line, current_msgid, reference_map) do
     # Only fix lines that reference svelte_strings.ex (generated module)
     # Leave other references (from .ex, .heex files) untouched
-    unless String.contains?(line, "svelte_strings.ex") do
-      {line, false}
+    if String.contains?(line, "svelte_strings.ex") do
+      do_fix_reference_line(line, current_msgid, reference_map)
     else
-      case current_msgid do
-        {:msgid, msgid, nil} ->
-          # Simple gettext
-          key = {:gettext, msgid}
+      {line, false}
+    end
+  end
 
-          case Map.get(reference_map, key) do
-            nil -> {line, false}
-            references -> {build_reference_line(references), true}
-          end
+  defp do_fix_reference_line(line, {:msgid, msgid, nil}, reference_map) do
+    # Simple gettext
+    key = {:gettext, msgid}
+    apply_reference_replacement(line, reference_map, key)
+  end
 
-        {:msgid, msgid, plural} when is_binary(plural) ->
-          # ngettext with plural
-          key = {:ngettext, msgid, plural}
+  defp do_fix_reference_line(line, {:msgid, msgid, plural}, reference_map)
+       when is_binary(plural) do
+    # ngettext with plural
+    key = {:ngettext, msgid, plural}
+    apply_reference_replacement(line, reference_map, key)
+  end
 
-          case Map.get(reference_map, key) do
-            nil -> {line, false}
-            references -> {build_reference_line(references), true}
-          end
-
-        _ ->
-          {line, false}
-      end
+  defp apply_reference_replacement(line, reference_map, key) do
+    case Map.get(reference_map, key) do
+      nil -> {line, false}
+      references -> {build_reference_line(references), true}
     end
   end
 
   # Build a new reference line from a list of {file, line} tuples
   defp build_reference_line(references) do
-    refs_str =
-      references
-      |> Enum.map(fn {file, line} -> "#{file}:#{line}" end)
-      |> Enum.join(" ")
-
+    refs_str = Enum.map_join(references, " ", fn {file, line} -> "#{file}:#{line}" end)
     "#: #{refs_str}"
   end
 

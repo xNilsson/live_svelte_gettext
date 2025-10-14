@@ -187,8 +187,7 @@ defmodule LiveSvelteGettext.Compiler do
                            @lsg_gettext_backend,
                            :default,
                            nil,
-                           unquote(extraction.msgid),
-                           unquote(extraction.plural),
+                           {unquote(extraction.msgid), unquote(extraction.plural)},
                            [],
                            unquote(file),
                            unquote(line)
@@ -239,41 +238,44 @@ defmodule LiveSvelteGettext.Compiler do
         extractions = unquote(Macro.escape(extractions))
 
         Enum.reduce(extractions, %{}, fn extraction, acc ->
-          case extraction.type do
-            :gettext ->
-              # For simple gettext, retrieve the translation WITHOUT interpolation
-              # We pass an empty bindings map, which will cause Gettext to return
-              # {:missing_bindings, translated_string, missing_keys} if there are interpolation
-              # markers in the msgstr. This gives us the raw msgstr with %{key} patterns intact.
-              translated =
-                case backend.lgettext(locale, "default", nil, extraction.msgid, %{}) do
-                  {:ok, str} -> str
-                  {:default, str} -> str
-                  {:missing_bindings, str, _keys} -> str
-                end
-
-              Map.put(acc, extraction.msgid, translated)
-
-            :ngettext ->
-              # For ngettext, we need to get raw translations without interpolation.
-              # Problem: lngettext automatically adds :count to bindings, causing interpolation.
-              #
-              # Solution: Since we don't have a way to bypass interpolation for plural forms,
-              # we'll return the raw msgid and msgid_plural from the extraction.
-              # The frontend will handle interpolation at runtime with actual values.
-              #
-              # Note: This means for non-default locales, users will need to manually
-              # provide translations. A future enhancement could parse .po files directly.
-
-              key = "#{extraction.msgid}|||#{extraction.plural}"
-
-              Map.put(
-                acc,
-                key,
-                %{"one" => extraction.msgid, "other" => extraction.plural}
-              )
-          end
+          add_translation_to_map(acc, extraction, backend, locale)
         end)
+      end
+
+      defp add_translation_to_map(acc, %{type: :gettext, msgid: msgid}, backend, locale) do
+        # For simple gettext, retrieve the translation WITHOUT interpolation
+        # We pass an empty bindings map, which will cause Gettext to return
+        # {:missing_bindings, translated_string, missing_keys} if there are interpolation
+        # markers in the msgstr. This gives us the raw msgstr with %{key} patterns intact.
+        translated = extract_gettext_translation(backend, locale, msgid)
+        Map.put(acc, msgid, translated)
+      end
+
+      defp add_translation_to_map(
+             acc,
+             %{type: :ngettext, msgid: msgid, plural: plural},
+             _backend,
+             _locale
+           ) do
+        # For ngettext, we need to get raw translations without interpolation.
+        # Problem: lngettext automatically adds :count to bindings, causing interpolation.
+        #
+        # Solution: Since we don't have a way to bypass interpolation for plural forms,
+        # we'll return the raw msgid and msgid_plural from the extraction.
+        # The frontend will handle interpolation at runtime with actual values.
+        #
+        # Note: This means for non-default locales, users will need to manually
+        # provide translations. A future enhancement could parse .po files directly.
+        key = "#{msgid}|||#{plural}"
+        Map.put(acc, key, %{"one" => msgid, "other" => plural})
+      end
+
+      defp extract_gettext_translation(backend, locale, msgid) do
+        case backend.lgettext(locale, "default", nil, msgid, %{}) do
+          {:ok, str} -> str
+          {:default, str} -> str
+          {:missing_bindings, str, _keys} -> str
+        end
       end
     end
   end

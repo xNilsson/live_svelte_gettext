@@ -1,5 +1,7 @@
 # Test fixture: Simple Phoenix web module
 defmodule TestAppWeb do
+  @moduledoc false
+
   def html do
     quote do
       use Phoenix.Component

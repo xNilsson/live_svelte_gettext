@@ -44,6 +44,8 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
 
   use Igniter.Mix.Task
 
+  alias Igniter.Project.Config
+
   @impl Igniter.Mix.Task
   def info(_argv, _parent) do
     %Igniter.Mix.Task.Info{
@@ -156,22 +158,24 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
       {:ok, _} ->
         # Find all .ex files
         Path.wildcard("lib/**/*.ex")
-        |> Enum.filter(fn file ->
-          case File.read(file) do
-            {:ok, content} ->
-              # Look ONLY for "use Gettext.Backend" - actual backend definition
-              # Do NOT match "use Gettext," which is for consumers
-              String.contains?(content, "use Gettext.Backend")
-
-            _ ->
-              false
-          end
-        end)
+        |> Enum.filter(&file_contains_gettext_backend?/1)
         |> Enum.map(&extract_module_name/1)
         |> Enum.reject(&is_nil/1)
 
       _ ->
         []
+    end
+  end
+
+  defp file_contains_gettext_backend?(file) do
+    case File.read(file) do
+      {:ok, content} ->
+        # Look ONLY for "use Gettext.Backend" - actual backend definition
+        # Do NOT match "use Gettext," which is for consumers
+        String.contains?(content, "use Gettext.Backend")
+
+      _ ->
+        false
     end
   end
 
@@ -266,23 +270,19 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
       "lib/#{backend_path}/gettext.ex"
     ]
 
-    otp_app =
-      Enum.find_value(possible_paths, fn path ->
-        case File.read(path) do
-          {:ok, content} ->
-            # Extract otp_app from "use Gettext.Backend, otp_app: :my_app"
-            case Regex.run(~r/use\s+Gettext\.Backend,\s+otp_app:\s+:(\w+)/, content) do
-              [_, app] -> String.to_atom(app)
-              _ -> nil
-            end
-
-          _ ->
-            nil
-        end
-      end)
+    otp_app = Enum.find_value(possible_paths, &extract_otp_app_from_file/1)
 
     # Fallback: derive from module name (MyAppWeb.Gettext -> :my_app)
     otp_app || derive_otp_app_from_module(backend)
+  end
+
+  defp extract_otp_app_from_file(path) do
+    with {:ok, content} <- File.read(path),
+         [_, app] <- Regex.run(~r/use\s+Gettext\.Backend,\s+otp_app:\s+:(\w+)/, content) do
+      String.to_atom(app)
+    else
+      _ -> nil
+    end
   end
 
   defp derive_otp_app_from_module(backend) do
@@ -303,7 +303,7 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
       igniter
     else
       # Add configuration to config/config.exs
-      Igniter.Project.Config.configure(
+      Config.configure(
         igniter,
         "config.exs",
         :live_svelte_gettext,
@@ -327,18 +327,20 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
       otp_app = extract_otp_app(backend)
 
       # Generate module content (just the body, not the defmodule wrapper)
-      module_contents = """
-      @moduledoc \"\"\"
+      # Using string concatenation to avoid nested heredoc confusion with Credo
+      moduledoc = ~s(@moduledoc \"\"\"
       Translation strings extracted from Svelte components.
 
       This module is automatically managed by LiveSvelteGettext.
-      \"\"\"
+      \"\"\")
 
-      use Gettext.Backend, otp_app: #{inspect(otp_app)}
-      use LiveSvelteGettext,
-        gettext_backend: #{inspect(backend)},
-        svelte_path: "#{svelte_path}"
-      """
+      module_contents =
+        moduledoc <>
+          "\n\n" <>
+          "use Gettext.Backend, otp_app: #{inspect(otp_app)}\n" <>
+          "use LiveSvelteGettext,\n" <>
+          "  gettext_backend: #{inspect(backend)},\n" <>
+          "  svelte_path: \"#{svelte_path}\"\n"
 
       Igniter.Project.Module.create_module(
         igniter,
@@ -368,48 +370,39 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
     if is_nil(backend) || is_nil(svelte_path) do
       igniter
     else
-      # Find the Gettext backend file
-      backend_path =
-        backend
-        |> Module.split()
-        |> Enum.map(&Macro.underscore/1)
-        |> Path.join()
-        |> then(&"lib/#{&1}.ex")
+      backend_path = derive_backend_path(backend)
+      update_backend_file(igniter, backend, backend_path, svelte_path)
+    end
+  end
 
-      if File.exists?(backend_path) do
-        case File.read(backend_path) do
-          {:ok, content} ->
-            if String.contains?(content, "use LiveSvelteGettext") do
-              Igniter.add_notice(
-                igniter,
-                "LiveSvelteGettext already configured in #{backend}"
-              )
+  defp derive_backend_path(backend) do
+    backend
+    |> Module.split()
+    |> Enum.map(&Macro.underscore/1)
+    |> Path.join()
+    |> then(&"lib/#{&1}.ex")
+  end
 
-              igniter
-            else
-              updated_content = add_use_live_svelte_gettext(content, backend, svelte_path)
-              File.write!(backend_path, updated_content)
-
-              Igniter.add_notice(
-                igniter,
-                "Added 'use LiveSvelteGettext' to #{backend}"
-              )
-
-              igniter
-            end
-
-          {:error, _} ->
-            Igniter.add_warning(igniter, "Could not read #{backend_path}")
-            igniter
-        end
-      else
+  defp update_backend_file(igniter, backend, backend_path, svelte_path) do
+    cond do
+      not File.exists?(backend_path) ->
         Igniter.add_warning(
           igniter,
           "#{backend_path} not found. Please add 'use LiveSvelteGettext' to your Gettext backend manually."
         )
 
-        igniter
-      end
+      match?({:ok, content} when is_binary(content), File.read(backend_path)) and
+          String.contains?(elem(File.read(backend_path), 1), "use LiveSvelteGettext") ->
+        Igniter.add_notice(igniter, "LiveSvelteGettext already configured in #{backend}")
+
+      match?({:ok, content} when is_binary(content), File.read(backend_path)) ->
+        {:ok, content} = File.read(backend_path)
+        updated_content = add_use_live_svelte_gettext(content, backend, svelte_path)
+        File.write!(backend_path, updated_content)
+        Igniter.add_notice(igniter, "Added 'use LiveSvelteGettext' to #{backend}")
+
+      true ->
+        Igniter.add_warning(igniter, "Could not read #{backend_path}")
     end
   end
 
@@ -443,47 +436,46 @@ defmodule Mix.Tasks.LiveSvelteGettext.Install do
         |> List.first()
         |> then(&Module.concat([&1]))
 
-      web_module_path =
-        web_module
-        |> Module.split()
-        |> Enum.map(&Macro.underscore/1)
-        |> Path.join()
-        |> then(&"lib/#{&1}.ex")
+      web_module_path = derive_web_module_path(web_module)
+      update_web_module_file(igniter, web_module, web_module_path)
+    end
+  end
 
-      if File.exists?(web_module_path) do
-        case File.read(web_module_path) do
-          {:ok, content} ->
-            if String.contains?(content, "LiveSvelteGettext.Components") do
-              Igniter.add_notice(
-                igniter,
-                "LiveSvelteGettext.Components already imported in #{web_module}"
-              )
+  defp derive_web_module_path(web_module) do
+    web_module
+    |> Module.split()
+    |> Enum.map(&Macro.underscore/1)
+    |> Path.join()
+    |> then(&"lib/#{&1}.ex")
+  end
 
-              igniter
-            else
-              updated_content = add_component_import(content)
-              File.write!(web_module_path, updated_content)
-
-              Igniter.add_notice(
-                igniter,
-                "Added LiveSvelteGettext.Components import to #{web_module}"
-              )
-
-              igniter
-            end
-
-          {:error, _} ->
-            Igniter.add_warning(igniter, "Could not read #{web_module_path}")
-            igniter
-        end
-      else
+  defp update_web_module_file(igniter, web_module, web_module_path) do
+    cond do
+      not File.exists?(web_module_path) ->
         Igniter.add_warning(
           igniter,
           "#{web_module_path} not found. Please add 'import LiveSvelteGettext.Components' to your html/0 function manually."
         )
 
-        igniter
-      end
+      match?({:ok, content} when is_binary(content), File.read(web_module_path)) and
+          String.contains?(elem(File.read(web_module_path), 1), "LiveSvelteGettext.Components") ->
+        Igniter.add_notice(
+          igniter,
+          "LiveSvelteGettext.Components already imported in #{web_module}"
+        )
+
+      match?({:ok, content} when is_binary(content), File.read(web_module_path)) ->
+        {:ok, content} = File.read(web_module_path)
+        updated_content = add_component_import(content)
+        File.write!(web_module_path, updated_content)
+
+        Igniter.add_notice(
+          igniter,
+          "Added LiveSvelteGettext.Components import to #{web_module}"
+        )
+
+      true ->
+        Igniter.add_warning(igniter, "Could not read #{web_module_path}")
     end
   end
 

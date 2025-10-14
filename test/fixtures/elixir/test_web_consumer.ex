@@ -1,6 +1,8 @@
 # Test fixture: Phoenix web module that USES Gettext (as a consumer, not a backend)
 # This simulates a typical MyAppWeb module that should NOT be detected as a Gettext backend
 defmodule TestAppWeb do
+  @moduledoc false
+
   def controller do
     quote do
       use Phoenix.Controller

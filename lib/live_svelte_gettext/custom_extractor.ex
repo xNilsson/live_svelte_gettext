@@ -114,8 +114,7 @@ defmodule LiveSvelteGettext.CustomExtractor do
     * `backend` - The Gettext backend module (e.g., `MyApp.Gettext`)
     * `domain` - The translation domain (`:default` or a binary string)
     * `msgctxt` - Optional message context (or `nil`)
-    * `msgid` - The singular message ID
-    * `msgid_plural` - The plural message ID
+    * `msgid_msgid_plural` - A tuple of `{msgid, msgid_plural}` for the singular and plural forms
     * `extracted_comments` - List of extracted comments (usually `[]`)
     * `file` - The source file path to record
     * `line` - The line number to record
@@ -131,8 +130,7 @@ defmodule LiveSvelteGettext.CustomExtractor do
         MyApp.Gettext,
         :default,
         nil,
-        "One item",
-        "%{count} items",
+        {"One item", "%{count} items"},
         [],
         "assets/svelte/ItemList.svelte",
         24
@@ -144,8 +142,7 @@ defmodule LiveSvelteGettext.CustomExtractor do
           module(),
           binary() | :default,
           binary() | nil,
-          binary(),
-          binary(),
+          {binary(), binary()},
           [binary()],
           binary(),
           non_neg_integer()
@@ -155,8 +152,7 @@ defmodule LiveSvelteGettext.CustomExtractor do
         backend,
         domain,
         msgctxt,
-        msgid,
-        msgid_plural,
+        {msgid, msgid_plural},
         extracted_comments,
         file,
         line

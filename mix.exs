@@ -28,6 +28,11 @@ defmodule LiveSvelteGettext.MixProject do
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.html": :test
+      ],
+
+      # Dialyzer
+      dialyzer: [
+        plt_add_apps: [:mix]
       ]
     ]
   end

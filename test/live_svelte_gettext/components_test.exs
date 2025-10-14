@@ -4,6 +4,8 @@ defmodule LiveSvelteGettext.ComponentsTest do
   import Phoenix.Component
   import LiveSvelteGettext.Components
 
+  alias Phoenix.HTML.Safe
+
   # Test Gettext backend module
   defmodule TestGettext do
     use Gettext.Backend, otp_app: :live_svelte_gettext
@@ -311,7 +313,7 @@ defmodule LiveSvelteGettext.ComponentsTest do
   # Helper to render component to string
   defp rendered_to_string(rendered) do
     rendered
-    |> Phoenix.HTML.Safe.to_iodata()
+    |> Safe.to_iodata()
     |> IO.iodata_to_binary()
   end
 end

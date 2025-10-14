@@ -1,6 +1,8 @@
 defmodule Mix.Tasks.LiveSvelteGettext.InstallTest do
   use ExUnit.Case, async: true
 
+  alias Mix.Tasks.LiveSvelteGettext.Install
+
   # Note: These tests are basic unit tests for helper functions.
   # Full integration testing would require a test Phoenix project.
 
@@ -153,19 +155,19 @@ defmodule Mix.Tasks.LiveSvelteGettext.InstallTest do
     test "accepts --gettext-backend option" do
       # Test that options are correctly parsed
       # This would be tested through the Igniter.Mix.Task.Info schema
-      info = Mix.Tasks.LiveSvelteGettext.Install.info([], nil)
+      info = Install.info([], nil)
 
       assert info.schema[:gettext_backend] == :string
     end
 
     test "accepts --svelte-path option" do
-      info = Mix.Tasks.LiveSvelteGettext.Install.info([], nil)
+      info = Install.info([], nil)
 
       assert info.schema[:svelte_path] == :string
     end
 
     test "accepts --module-name option" do
-      info = Mix.Tasks.LiveSvelteGettext.Install.info([], nil)
+      info = Install.info([], nil)
 
       assert info.schema[:module_name] == :string
     end
@@ -173,7 +175,7 @@ defmodule Mix.Tasks.LiveSvelteGettext.InstallTest do
 
   describe "task info" do
     test "provides correct task information" do
-      info = Mix.Tasks.LiveSvelteGettext.Install.info([], nil)
+      info = Install.info([], nil)
 
       assert info.group == :igniter
       assert info.example == "mix igniter.install live_svelte_gettext"
