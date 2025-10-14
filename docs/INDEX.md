@@ -37,7 +37,8 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 - **Total Active Tasks:** 1
 - **Not Started:** 1
 - **In Progress:** 0
-- **Completed (Archived):** 4
+- **Completed (Archived):** 5
+- **Postponed:** 1
 
 ---
 
@@ -45,7 +46,7 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 
 **Next Action:** Start T005 - Documentation & Publishing
 
-The core implementation (phases 1-4) is complete! Now it's time to polish documentation and prepare for release.
+The core implementation (phases 1-4) is complete! T006 (accurate Svelte file references) has been successfully implemented and verified. Now it's time to polish documentation and prepare for release.
 
 Use `/task T005` to begin working on documentation and publishing.
 
@@ -55,10 +56,19 @@ Use `/task T005` to begin working on documentation and publishing.
 
 | ID | Title | Completed |
 |----|-------|-----------|
+| [T006](archived/T006-keep-references.md) | Preserve Svelte Source File References | 2025-10-14 |
 | [T004](archived/T004-phase-4-igniter-installer.md) | Igniter Installer | 2025-10-14 |
 | [T003](archived/T003-phase-3-typescript-client-library.md) | TypeScript Client Library | 2025-10-14 |
 | [T002](archived/T002-phase-2-compile-time-macro-system.md) | Compile-Time Macro System | 2025-10-14 |
 | [T001](archived/T001-phase-1-core-extraction-engine.md) | Core Extraction Engine | 2025-10-14 |
+
+---
+
+## 📦 Postponed Tasks
+
+| ID | Title | Reason |
+|----|-------|--------|
+| [T007](archived/T007-gettext-pr-override-location.md) | Gettext PR - Add `:override_location` Support | CustomExtractor solution works perfectly; upstream PR not worth the time investment. Revisit if community demand emerges. |
 
 ---
 

@@ -354,6 +354,57 @@ mix coveralls.html
 open cover/excoveralls.html
 ```
 
+## For Library Authors
+
+If you're building a compile-time i18n extractor for a non-Elixir templating system (like Svelte, Surface, Temple, etc.), you may encounter the same challenge we faced: all extracted translation strings reference the macro invocation line instead of the original source file locations.
+
+**The Problem:**
+
+```elixir
+# lib/my_app_web/template_strings.ex:39
+use MyI18nExtractor  # <-- All strings reference this line
+
+# In POT file:
+#: lib/my_app_web/template_strings.ex:39
+msgid "Save Profile"
+#: lib/my_app_web/template_strings.ex:39
+msgid "Delete Account"
+```
+
+**Our Solution:**
+
+We solved this by creating a custom extractor that modifies `Macro.Env` before calling `Gettext.Extractor.extract/6`. See `lib/livesvelte_gettext/custom_extractor.ex` for the implementation.
+
+The key insight:
+
+```elixir
+def extract_with_location(env, backend, domain, msgctxt, msgid, extracted_comments, file, line) do
+  # Create a modified environment with custom file and line
+  modified_env = %{env | file: file, line: line}
+
+  # Gettext reads env.file and env.line
+  Gettext.Extractor.extract(
+    modified_env,
+    backend,
+    domain,
+    msgctxt,
+    msgid,
+    extracted_comments
+  )
+end
+```
+
+This produces accurate references in POT files:
+
+```
+#: assets/svelte/components/Button.svelte:42
+msgid "Save Profile"
+#: assets/templates/settings.sface:18
+msgid "Delete Account"
+```
+
+Feel free to copy this pattern for your own compile-time extraction needs!
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

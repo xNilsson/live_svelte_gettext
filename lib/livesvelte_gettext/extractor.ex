@@ -68,10 +68,22 @@ defmodule LiveSvelteGettext.Extractor do
   def extract_from_file(file) do
     case File.read(file) do
       {:ok, content} ->
-        extract_from_content(content, file)
+        # Convert to relative path for storage
+        relative_file = make_path_relative(file)
+        extract_from_content(content, relative_file)
 
       {:error, _reason} ->
         []
+    end
+  end
+
+  # Convert absolute file paths to relative paths
+  defp make_path_relative(file_path) do
+    cwd = File.cwd!()
+
+    case String.starts_with?(file_path, cwd) do
+      true -> Path.relative_to(file_path, cwd)
+      false -> file_path
     end
   end
 

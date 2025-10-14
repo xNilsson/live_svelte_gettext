@@ -151,25 +151,57 @@ defmodule LiveSvelteGettext.Compiler do
     end)
   end
 
-  # Generate gettext/ngettext calls that mix gettext.extract can discover
+  # Generate extraction calls that mix gettext.extract can discover
+  # Uses CustomExtractor to preserve accurate source locations in .pot files
   defp generate_extraction_calls(extractions) do
-    Enum.flat_map(extractions, fn extraction ->
-      case extraction.type do
-        :gettext ->
-          [
-            quote do
-              _ = gettext(unquote(extraction.msgid))
-            end
-          ]
+    [
+      quote do
+        # Only perform extraction when mix gettext.extract is running
+        if Gettext.Extractor.extracting?() do
+          # Generate one extraction call per reference to preserve all file:line locations
+          unquote_splicing(
+            Enum.flat_map(extractions, fn extraction ->
+              Enum.flat_map(extraction.references, fn {file, line} ->
+                case extraction.type do
+                  :gettext ->
+                    [
+                      quote do
+                        LiveSvelteGettext.CustomExtractor.extract_with_location(
+                          __ENV__,
+                          @lsg_gettext_backend,
+                          :default,
+                          nil,
+                          unquote(extraction.msgid),
+                          [],
+                          unquote(file),
+                          unquote(line)
+                        )
+                      end
+                    ]
 
-        :ngettext ->
-          [
-            quote do
-              _ = ngettext(unquote(extraction.msgid), unquote(extraction.plural), 1)
-            end
-          ]
+                  :ngettext ->
+                    [
+                      quote do
+                        LiveSvelteGettext.CustomExtractor.extract_plural_with_location(
+                          __ENV__,
+                          @lsg_gettext_backend,
+                          :default,
+                          nil,
+                          unquote(extraction.msgid),
+                          unquote(extraction.plural),
+                          [],
+                          unquote(file),
+                          unquote(line)
+                        )
+                      end
+                    ]
+                end
+              end)
+            end)
+          )
+        end
       end
-    end)
+    ]
   end
 
   # Generate the all_translations/1 function
