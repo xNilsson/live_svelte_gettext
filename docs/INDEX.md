@@ -25,6 +25,11 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 
 ## ✅ Active Tasks
 
+### Phase 3: TypeScript Client Library
+| ID | Title | Status | Assignee |
+|----|-------|--------|----------|
+| [T010](tasks/T010-auto-initialize-translations.md) | Auto-Initialize Translations | In Progress | @nille |
+
 ### Phase 5: Documentation & Publishing
 | ID | Title | Status | Assignee |
 |----|-------|--------|----------|
@@ -34,9 +39,9 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 
 ## 📈 Statistics
 
-- **Total Active Tasks:** 1
+- **Total Active Tasks:** 2
 - **Not Started:** 1
-- **In Progress:** 0
+- **In Progress:** 1
 - **Completed (Archived):** 5
 - **Postponed:** 1
 
@@ -44,11 +49,11 @@ A zero-maintenance i18n library for Phoenix + Svelte applications using compile-
 
 ## 🎯 Current Focus
 
-**Next Action:** Start T005 - Documentation & Publishing
+**Current Action:** T010 - Auto-Initialize Translations
 
-The core implementation (phases 1-4) is complete! T006 (accurate Svelte file references) has been successfully implemented and verified. Now it's time to polish documentation and prepare for release.
+Implementing auto-initialization of translations in the `.svelte_translations` component to eliminate manual boilerplate from Svelte components. This will make the library truly zero-setup from the user's perspective.
 
-Use `/task T005` to begin working on documentation and publishing.
+**Next Action:** T005 - Documentation & Publishing
 
 ---
 

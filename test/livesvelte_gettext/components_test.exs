@@ -196,6 +196,63 @@ defmodule LiveSvelteGettext.ComponentsTest do
       end
     end
 
+    test "includes Phoenix hook div for auto-initialization" do
+      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+
+      try do
+        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+
+        assigns = %{}
+
+        html =
+          rendered_to_string(~H"""
+          <.svelte_translations />
+          """)
+
+        # Should have the JSON script tag
+        assert html =~ ~s(<script id="svelte-translations" type="application/json">)
+
+        # Should have the Phoenix hook div
+        assert html =~ ~s(phx-hook="LiveSvelteGettextInit")
+        assert html =~ ~s(data-translations-id="svelte-translations")
+        assert html =~ ~s(style="display:none;")
+      after
+        # Restore original config
+        if original_config do
+          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+        else
+          Application.delete_env(:livesvelte_gettext, :gettext)
+        end
+      end
+    end
+
+    test "hook div uses custom id attribute" do
+      original_config = Application.get_env(:livesvelte_gettext, :gettext)
+
+      try do
+        Application.put_env(:livesvelte_gettext, :gettext, TestGettext)
+
+        assigns = %{}
+
+        html =
+          rendered_to_string(~H"""
+          <.svelte_translations id="my-custom-id" />
+          """)
+
+        # Should reference custom ID in hook data attribute
+        assert html =~ ~s(data-translations-id="my-custom-id")
+        # Hook div should have unique ID based on translations ID
+        assert html =~ ~s(id="my-custom-id-init")
+      after
+        # Restore original config
+        if original_config do
+          Application.put_env(:livesvelte_gettext, :gettext, original_config)
+        else
+          Application.delete_env(:livesvelte_gettext, :gettext)
+        end
+      end
+    end
+
     test "raises helpful error when no gettext_module configured or provided" do
       # Remove application config
       original_config = Application.get_env(:livesvelte_gettext, :gettext)

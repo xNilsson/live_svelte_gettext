@@ -23,15 +23,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provides `__lsg_metadata__/0` debug function
   - Validates configuration options at compile time
 
-- **TypeScript client library** (`assets/js/translations.ts`)
-  - `initTranslations()` - Initialize with server data
+- **NPM package** (`live-svelte-gettext`)
   - `gettext()` - Simple translations with interpolation
   - `ngettext()` - Plural form handling
+  - `initTranslations()` - Initialize with server data (called automatically)
   - `isInitialized()` - Check initialization status
   - `resetTranslations()` - Reset state (for testing)
-  - Full TypeScript type safety
+  - `LiveSvelteGettextInit` - Phoenix LiveView hook for auto-initialization
+  - Full TypeScript type safety with `.d.ts` definitions
   - Variable interpolation with `%{name}` syntax
   - Count-based pluralization
+
+- **Phoenix component** (`.svelte_translations`)
+  - Injects translations as JSON script tag
+  - Renders invisible div with `phx-hook="LiveSvelteGettextInit"`
+  - Auto-initializes translations via Phoenix LiveView hook
+  - Zero manual setup required in Svelte components
 
 - **Igniter installer** (`mix igniter.install livesvelte_gettext`)
   - Automatic Gettext backend detection

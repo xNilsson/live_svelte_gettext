@@ -75,16 +75,30 @@ config :livesvelte_gettext,
   gettext: MyAppWeb.Gettext
 ```
 
-4. **Copy the TypeScript library** from the package:
+4. **Copy the NPM package** from the dependency:
 
 ```bash
-# Find the library in your deps
-cp deps/livesvelte_gettext/priv/static/translations.ts assets/js/translations.ts
+# Copy the NPM package to your project
+cp -r deps/livesvelte_gettext/assets/package node_modules/live-svelte-gettext
 ```
 
-Or download it directly:
+Or install from npm (once published):
 ```bash
-curl -o assets/js/translations.ts https://raw.githubusercontent.com/xnilsson/livesvelte_gettext/main/assets/js/translations.ts
+npm install live-svelte-gettext
+```
+
+5. **Register the Phoenix hook** in `assets/js/app.js`:
+
+```javascript
+import { getHooks } from "live-svelte";
+import { LiveSvelteGettextInit } from "live-svelte-gettext";
+
+const liveSocket = new LiveSocket("/live", Socket, {
+  hooks: {
+    ...getHooks(Components),
+    LiveSvelteGettextInit,  // Add this line
+  }
+});
 ```
 
 ## Quick Start
@@ -118,6 +132,7 @@ The component will automatically:
 - Use the Gettext module configured in `config/config.exs`
 - Fetch translations for the current locale
 - Inject them as JSON in a `<script>` tag
+- Trigger the `LiveSvelteGettextInit` hook to initialize translations when the page loads
 
 **Advanced usage:**
 
@@ -136,7 +151,7 @@ The component will automatically:
 
 ```svelte
 <script>
-  import { gettext, ngettext } from './translations.ts'
+  import { gettext, ngettext } from 'live-svelte-gettext'
 
   let itemCount = 5
 </script>
@@ -148,7 +163,7 @@ The component will automatically:
 </div>
 ```
 
-The TypeScript library automatically reads translations from the injected `<script>` tag.
+That's it! Translations are automatically initialized via the Phoenix hook when the page loads.
 
 ### 4. Extract and translate
 
@@ -243,20 +258,23 @@ Full API documentation is available on [HexDocs](https://hexdocs.pm/livesvelte_g
 ### TypeScript API
 
 ```typescript
-// Initialize translations (call once with data from server)
-initTranslations(translations: Record<string, string>): void
-
 // Get translated string
 gettext(key: string, vars?: Record<string, string | number>): string
 
 // Get translated string with pluralization
 ngettext(singular: string, plural: string, count: number, vars?: Record<string, string | number>): string
 
+// Initialize translations manually (automatically called by LiveSvelteGettextInit hook)
+initTranslations(translations: Record<string, string>): void
+
 // Check if initialized
 isInitialized(): boolean
 
 // Reset (useful for testing)
 resetTranslations(): void
+
+// Phoenix LiveView Hook (register in app.js)
+LiveSvelteGettextInit: PhoenixHook
 ```
 
 ## Troubleshooting
@@ -272,12 +290,29 @@ mix compile
 
 The module should recompile automatically when Svelte files change due to `@external_resource`.
 
-### TypeScript library not found
+### NPM package not found / Import errors
 
-If the installer didn't copy the TypeScript library, you can manually download it:
+If you get import errors for `live-svelte-gettext`, make sure the package is properly installed:
 
 ```bash
-curl -o assets/js/translations.ts https://raw.githubusercontent.com/xnilsson/livesvelte_gettext/main/assets/js/translations.ts
+# Copy from the Hex dependency
+cp -r deps/livesvelte_gettext/assets/package node_modules/live-svelte-gettext
+
+# Or once published to npm:
+npm install live-svelte-gettext
+```
+
+Also verify that you've registered the hook in `assets/js/app.js`:
+
+```javascript
+import { LiveSvelteGettextInit } from "live-svelte-gettext";
+
+const liveSocket = new LiveSocket("/live", Socket, {
+  hooks: {
+    ...getHooks(Components),
+    LiveSvelteGettextInit,  // This line is required!
+  }
+});
 ```
 
 ### Gettext.extract not finding Svelte strings

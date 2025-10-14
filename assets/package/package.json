@@ -1,0 +1,26 @@
+{
+  "name": "live-svelte-gettext",
+  "version": "0.1.0",
+  "description": "Runtime translation functions and Phoenix LiveView hooks for LiveSvelte Gettext",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "phoenix",
+    "liveview",
+    "svelte",
+    "i18n",
+    "gettext",
+    "translations"
+  ],
+  "author": "Christopher Nilsson",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xnilsson/livesvelte_gettext"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}
