@@ -15,11 +15,20 @@ defmodule LiveSvelteGettext.Integration.FullCompileTest do
 
   describe "full integration test" do
     test "module compiles successfully" do
-      # If we got here, the module compiled, which means:
-      # 1. The macro executed without errors
-      # 2. All generated code is valid Elixir
-      # 3. The Extractor ran successfully
-      assert true
+      # If we got here, the module compiled. Let's verify what was actually generated:
+
+      # 1. The macro executed without errors - verify the module exists
+      assert Code.ensure_loaded?(TestGettext)
+      assert Code.ensure_loaded?(TestGettextBackend)
+
+      # 2. All generated code is valid Elixir - verify key functions exist
+      assert function_exported?(TestGettext, :all_translations, 1)
+      assert function_exported?(TestGettext, :__lsg_metadata__, 0)
+
+      # 3. The Extractor ran successfully - verify it found our fixtures
+      metadata = TestGettext.__lsg_metadata__()
+      assert length(metadata.svelte_files) > 0, "Should have found Svelte files"
+      assert length(metadata.extractions) > 0, "Should have extracted translation strings"
     end
 
     test "generated functions exist" do

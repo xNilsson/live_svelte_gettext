@@ -81,7 +81,7 @@ defmodule Mix.Tasks.LivesvelteGettext.FixReferences do
         if replacements > 0 do
           action = if dry_run, do: "Would update", else: "Updated"
           Mix.shell().info("  #{action} #{file} (#{replacements} references)")
-          {total_count + replacements, file_count + (if modified?, do: 1, else: 0)}
+          {total_count + replacements, file_count + if(modified?, do: 1, else: 0)}
         else
           {total_count, file_count}
         end
@@ -222,14 +222,15 @@ defmodule Mix.Tasks.LivesvelteGettext.FixReferences do
 
   # Fix any buffered reference lines now that we know the full msgid+plural
   defp fix_buffered_references(acc, msgid_info, reference_map, count) do
-    {new_acc, new_count} = Enum.reduce(acc, {[], count}, fn line, {lacc, lcount} ->
-      if String.starts_with?(line, "#: ") do
-        {new_line, replaced?} = fix_reference_line(line, msgid_info, reference_map)
-        {[new_line | lacc], if(replaced?, do: lcount + 1, else: lcount)}
-      else
-        {[line | lacc], lcount}
-      end
-    end)
+    {new_acc, new_count} =
+      Enum.reduce(acc, {[], count}, fn line, {lacc, lcount} ->
+        if String.starts_with?(line, "#: ") do
+          {new_line, replaced?} = fix_reference_line(line, msgid_info, reference_map)
+          {[new_line | lacc], if(replaced?, do: lcount + 1, else: lcount)}
+        else
+          {[line | lacc], lcount}
+        end
+      end)
 
     {Enum.reverse(new_acc), new_count}
   end
@@ -281,7 +282,7 @@ defmodule Mix.Tasks.LivesvelteGettext.FixReferences do
   # For multiline strings, PO files use continuation, but our generated strings
   # from Svelte are typically single-line
   defp extract_string(line) do
-    case Regex.run(~r/^msgid(?:_plural)?\s+"(.*)"/,line) do
+    case Regex.run(~r/^msgid(?:_plural)?\s+"(.*)"/, line) do
       [_, captured] -> unescape_string(captured)
       nil -> ""
     end

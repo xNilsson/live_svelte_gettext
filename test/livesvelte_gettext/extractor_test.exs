@@ -281,4 +281,59 @@ defmodule LiveSvelteGettext.ExtractorTest do
       assert Enum.any?(result, &(&1.type == :ngettext && &1.msgid == "Item"))
     end
   end
+
+  describe "path relativization" do
+    test "converts absolute paths to relative paths" do
+      # Create a temp file in the project directory
+      cwd = File.cwd!()
+      rel_path = "test/fixtures/test_path.svelte"
+      abs_path = Path.join(cwd, rel_path)
+
+      # Create the file
+      File.write!(abs_path, ~s|{gettext("Test")}|)
+
+      on_exit(fn -> File.rm(abs_path) end)
+
+      # Extract from the absolute path
+      result = Extractor.extract_from_file(abs_path)
+
+      # The references should contain relative paths, not absolute
+      assert [%{references: [{file, _line}]}] = result
+      assert file == rel_path
+      refute String.starts_with?(file, cwd)
+    end
+
+    test "leaves relative paths unchanged" do
+      # Use an existing fixture file
+      rel_path = "test/fixtures/UserProfile.svelte"
+
+      result = Extractor.extract_from_file(rel_path)
+
+      # All references should remain relative
+      Enum.each(result, fn %{references: refs} ->
+        Enum.each(refs, fn {file, _line} ->
+          # Should be relative (no leading slash on Unix, no drive letter on Windows)
+          refute String.starts_with?(file, "/")
+          refute String.match?(file, ~r/^[A-Z]:/)
+        end)
+      end)
+    end
+
+    test "handles paths outside project directory" do
+      # Create a temp file outside the project
+      temp_dir = System.tmp_dir!()
+      temp_file = Path.join(temp_dir, "outside_#{System.unique_integer([:positive])}.svelte")
+
+      File.write!(temp_file, ~s|{gettext("Outside")}|)
+
+      on_exit(fn -> File.rm(temp_file) end)
+
+      result = Extractor.extract_from_file(temp_file)
+
+      # Paths outside the project should be kept as absolute
+      assert [%{references: [{file, _line}]}] = result
+      assert file == temp_file
+      assert String.starts_with?(file, temp_dir)
+    end
+  end
 end

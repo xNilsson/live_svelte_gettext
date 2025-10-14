@@ -159,46 +159,46 @@ defmodule LiveSvelteGettext.Compiler do
         # Only perform extraction when mix gettext.extract is running
         if Gettext.Extractor.extracting?() do
           # Generate one extraction call per reference to preserve all file:line locations
-          unquote_splicing(
-            Enum.flat_map(extractions, fn extraction ->
-              Enum.flat_map(extraction.references, fn {file, line} ->
-                case extraction.type do
-                  :gettext ->
-                    [
-                      quote do
-                        LiveSvelteGettext.CustomExtractor.extract_with_location(
-                          __ENV__,
-                          @lsg_gettext_backend,
-                          :default,
-                          nil,
-                          unquote(extraction.msgid),
-                          [],
-                          unquote(file),
-                          unquote(line)
-                        )
-                      end
-                    ]
+          (unquote_splicing(
+             Enum.flat_map(extractions, fn extraction ->
+               Enum.flat_map(extraction.references, fn {file, line} ->
+                 case extraction.type do
+                   :gettext ->
+                     [
+                       quote do
+                         LiveSvelteGettext.CustomExtractor.extract_with_location(
+                           __ENV__,
+                           @lsg_gettext_backend,
+                           :default,
+                           nil,
+                           unquote(extraction.msgid),
+                           [],
+                           unquote(file),
+                           unquote(line)
+                         )
+                       end
+                     ]
 
-                  :ngettext ->
-                    [
-                      quote do
-                        LiveSvelteGettext.CustomExtractor.extract_plural_with_location(
-                          __ENV__,
-                          @lsg_gettext_backend,
-                          :default,
-                          nil,
-                          unquote(extraction.msgid),
-                          unquote(extraction.plural),
-                          [],
-                          unquote(file),
-                          unquote(line)
-                        )
-                      end
-                    ]
-                end
-              end)
-            end)
-          )
+                   :ngettext ->
+                     [
+                       quote do
+                         LiveSvelteGettext.CustomExtractor.extract_plural_with_location(
+                           __ENV__,
+                           @lsg_gettext_backend,
+                           :default,
+                           nil,
+                           unquote(extraction.msgid),
+                           unquote(extraction.plural),
+                           [],
+                           unquote(file),
+                           unquote(line)
+                         )
+                       end
+                     ]
+                 end
+               end)
+             end)
+           ))
         end
       end
     ]
@@ -246,24 +246,37 @@ defmodule LiveSvelteGettext.Compiler do
           case extraction.type do
             :gettext ->
               # For simple gettext, the key is the msgid
-              # Use Gettext.dgettext/3 (runtime function) instead of gettext/1 macro
-              translated = Gettext.dgettext(backend, "default", extraction.msgid)
+              # Extract interpolation keys and provide dummy bindings to avoid warnings
+              bindings = extract_interpolation_bindings(extraction.msgid)
+              translated = Gettext.dgettext(backend, "default", extraction.msgid, bindings)
               Map.put(acc, extraction.msgid, translated)
 
             :ngettext ->
               # For ngettext, we store both singular and plural forms
               # The key format is "msgid|||msgid_plural" (triple pipe separator)
-              # Use Gettext.dngettext/5 (runtime function) instead of ngettext/3 macro
+              # Extract interpolation keys from both singular and plural
+              bindings =
+                extract_interpolation_bindings(extraction.msgid)
+                |> Map.merge(extract_interpolation_bindings(extraction.plural))
+
               singular =
-                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 1)
+                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 1, bindings)
 
               plural =
-                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 2)
+                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 2, bindings)
 
               key = "#{extraction.msgid}|||#{extraction.plural}"
               Map.put(acc, key, %{"one" => singular, "other" => plural})
           end
         end)
+      end
+
+      # Extract interpolation keys from a msgid and create dummy bindings
+      # e.g., "Hello %{name}!" => %{name: "__BINDING__"}
+      defp extract_interpolation_bindings(msgid) do
+        Regex.scan(~r/%\{(\w+)\}/, msgid)
+        |> Enum.map(fn [_full, key] -> {String.to_atom(key), "__BINDING__"} end)
+        |> Map.new()
       end
     end
   end

@@ -106,16 +106,6 @@ defmodule LiveSvelteGettext.CompilerTest do
     end
 
     test "generates AST with source file and line metadata" do
-      # Create test extraction with known file and line
-      extractions = [
-        %{
-          msgid: "Save Profile",
-          type: :gettext,
-          plural: nil,
-          references: [{"assets/svelte/Button.svelte", 42}]
-        }
-      ]
-
       # Call the private function via public generate API
       ast = Compiler.generate(TestModule, TestGettext, "test/fixtures")
 
@@ -127,49 +117,25 @@ defmodule LiveSvelteGettext.CompilerTest do
     end
 
     test "generates one call per reference for duplicate strings" do
-      # Create test extraction with same msgid but multiple references
-      extractions = [
-        %{
-          msgid: "Save",
-          type: :gettext,
-          plural: nil,
-          references: [
-            {"assets/svelte/Button.svelte", 10},
-            {"assets/svelte/Form.svelte", 20},
-            {"assets/svelte/Modal.svelte", 30}
-          ]
-        }
-      ]
-
-      # The implementation should generate 3 separate gettext calls
-      # (one for each reference) to preserve all locations in .pot files
-      # This is tested implicitly by the integration test
-      assert true
-    end
-  end
-
-  describe "path relativization" do
-    test "converts absolute paths to relative paths" do
-      cwd = File.cwd!()
-      abs_path = Path.join(cwd, "assets/svelte/Button.svelte")
-
-      # Call generate which uses make_path_relative internally
+      # Generate AST from fixtures
       ast = Compiler.generate(TestModule, TestGettext, "test/fixtures")
 
-      # The AST should be valid (compilation test)
+      # Convert AST to string and inspect for extraction patterns
+      ast_string = Macro.to_string(ast)
+
+      # The implementation uses Enum.flat_map to iterate over references
+      # Each reference should generate a separate extraction call
+      # We can verify this by checking that extraction calls are present
+      assert ast_string =~ "extract_with_location"
+
+      # Check that multiple string literals from our fixtures appear
+      # This verifies that extraction is actually happening
+      assert ast_string =~ "Delete"
+      assert ast_string =~ "Save Changes"
+      assert ast_string =~ "Shopping Cart"
+
+      # Verify the AST structure is valid
       assert is_tuple(ast) or is_list(ast)
-    end
-
-    test "leaves relative paths unchanged when already relative" do
-      # If a path is already relative, it should stay relative
-      # This is handled by make_path_relative/1
-      assert true
-    end
-
-    test "handles paths outside project directory" do
-      # Paths outside the project should be left as-is
-      # This is a safety feature of make_path_relative/1
-      assert true
     end
   end
 end

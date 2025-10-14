@@ -30,6 +30,7 @@ livesvelte_gettext-*.tar
 
 # Static artifacts
 /node_modules
+assets/node_modules
 
 # Editor files
 .elixir_ls/
