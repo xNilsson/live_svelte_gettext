@@ -47,6 +47,7 @@ defmodule LiveSvelteGettext.MixProject do
 
       # Optional dependencies
       {:igniter, "~> 0.2", optional: true},
+      {:phoenix_live_view, "~> 1.0", optional: true},
 
       # Development dependencies
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
@@ -81,7 +82,8 @@ defmodule LiveSvelteGettext.MixProject do
       ],
       groups_for_modules: [
         Core: [
-          LiveSvelteGettext
+          LiveSvelteGettext,
+          LiveSvelteGettext.Components
         ],
         Internal: [
           LiveSvelteGettext.Extractor,

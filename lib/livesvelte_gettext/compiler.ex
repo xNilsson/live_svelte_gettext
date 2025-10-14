@@ -260,10 +260,24 @@ defmodule LiveSvelteGettext.Compiler do
                 |> Map.merge(extract_interpolation_bindings(extraction.plural))
 
               singular =
-                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 1, bindings)
+                Gettext.dngettext(
+                  backend,
+                  "default",
+                  extraction.msgid,
+                  extraction.plural,
+                  1,
+                  bindings
+                )
 
               plural =
-                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 2, bindings)
+                Gettext.dngettext(
+                  backend,
+                  "default",
+                  extraction.msgid,
+                  extraction.plural,
+                  2,
+                  bindings
+                )
 
               key = "#{extraction.msgid}|||#{extraction.plural}"
               Map.put(acc, key, %{"one" => singular, "other" => plural})

@@ -32,6 +32,7 @@ mix igniter.install livesvelte_gettext
 The installer will:
 - Detect your Gettext backend automatically
 - Find your Svelte directory
+- Configure your Gettext module in `config/config.exs`
 - Create a `SvelteStrings` module with the correct configuration
 - Copy the TypeScript translation library to `assets/js/translations.ts`
 - Provide usage instructions
@@ -66,7 +67,15 @@ defmodule MyAppWeb.SvelteStrings do
 end
 ```
 
-3. **Copy the TypeScript library** from the package:
+3. **Configure the Gettext module** in `config/config.exs`:
+
+```elixir
+# config/config.exs
+config :livesvelte_gettext,
+  gettext: MyAppWeb.Gettext
+```
+
+4. **Copy the TypeScript library** from the package:
 
 ```bash
 # Find the library in your deps
@@ -82,17 +91,52 @@ curl -o assets/js/translations.ts https://raw.githubusercontent.com/xnilsson/liv
 
 Once installed, you can start using translations in your Svelte components immediately.
 
-### 1. Use translations in your Svelte components
+### 1. Import the component in your view helpers
+
+```elixir
+# lib/my_app_web.ex
+def html do
+  quote do
+    # ... existing imports ...
+    import LiveSvelteGettext.Components
+  end
+end
+```
+
+### 2. Add translation injection to your template
+
+Add the `svelte_translations` component before your Svelte components:
+
+```heex
+<!-- In your layout or LiveView template -->
+<.svelte_translations />
+
+<.svelte name="MyComponent" props={%{...}} />
+```
+
+The component will automatically:
+- Use the Gettext module configured in `config/config.exs`
+- Fetch translations for the current locale
+- Inject them as JSON in a `<script>` tag
+
+**Advanced usage:**
+
+```heex
+<!-- Override locale -->
+<.svelte_translations locale="es" />
+
+<!-- Explicit Gettext module (for multi-tenant apps) -->
+<.svelte_translations gettext_module={@tenant.gettext_module} />
+
+<!-- Custom script tag ID -->
+<.svelte_translations id="custom-translations" />
+```
+
+### 3. Use translations in your Svelte components
 
 ```svelte
 <script>
   import { gettext, ngettext } from './translations.ts'
-  export let translations
-
-  // Initialize translations when they arrive from the server
-  $: if (translations) {
-    initTranslations(translations)
-  }
 
   let itemCount = 5
 </script>
@@ -104,23 +148,9 @@ Once installed, you can start using translations in your Svelte components immed
 </div>
 ```
 
-### 2. Pass translations from your LiveView
+The TypeScript library automatically reads translations from the injected `<script>` tag.
 
-```elixir
-defmodule MyAppWeb.PageLive do
-  use MyAppWeb, :live_view
-
-  def mount(_params, _session, socket) do
-    # Get translations for the current locale
-    locale = Gettext.get_locale(MyAppWeb.Gettext)
-    translations = MyAppWeb.SvelteStrings.all_translations(locale)
-
-    {:ok, assign(socket, :translations, translations)}
-  end
-end
-```
-
-### 3. Extract and translate
+### 4. Extract and translate
 
 ```bash
 # Extract translation strings from both Elixir and Svelte files
@@ -206,6 +236,7 @@ Full API documentation is available on [HexDocs](https://hexdocs.pm/livesvelte_g
 ### Key Modules
 
 - **`LiveSvelteGettext`** - Main module to `use` in your Gettext backend
+- **`LiveSvelteGettext.Components`** - Phoenix components for injecting translations
 - **`LiveSvelteGettext.Extractor`** - Extracts translation strings from Svelte files
 - **`LiveSvelteGettext.Compiler`** - Generates code at compile time
 

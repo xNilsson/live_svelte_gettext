@@ -50,6 +50,7 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
 
     igniter
     |> detect_or_prompt_configuration(options)
+    |> add_application_config()
     |> create_svelte_strings_module()
     |> copy_typescript_library()
     |> add_usage_notice()
@@ -234,6 +235,25 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
     |> Module.concat()
   end
 
+  ## Application Configuration
+
+  defp add_application_config(igniter) do
+    backend = Igniter.assign(igniter, :lsg_backend)
+
+    if is_nil(backend) do
+      igniter
+    else
+      # Add configuration to config/config.exs
+      Igniter.Project.Config.configure(
+        igniter,
+        "config.exs",
+        :livesvelte_gettext,
+        [:gettext],
+        backend
+      )
+    end
+  end
+
   ## Module Creation
 
   defp create_svelte_strings_module(igniter) do
@@ -356,32 +376,41 @@ defmodule Mix.Tasks.LivesvelteGettext.Install do
         Svelte Path: #{svelte_path}
         Module: #{inspect(module_name)}
 
+      Application config added to config/config.exs:
+        config :livesvelte_gettext, gettext: #{inspect(backend)}
+
       Next steps:
 
-      1. In your LiveView, pass translations to Svelte:
+      1. Import the component in your view helpers:
 
-          def mount(_params, _session, socket) do
-            translations = #{inspect(module_name)}.all_translations("en")
-            {:ok, assign(socket, :translations, translations)}
+          # In lib/my_app_web.ex
+          def html do
+            quote do
+              # ... existing code ...
+              import LiveSvelteGettext.Components
+            end
           end
 
-      2. In your Svelte components, use the translation functions:
+      2. Add the translation injection component to your layout or LiveView template:
+
+          # In your layout or LiveView template (before Svelte components)
+          <.svelte_translations />
+
+          <.svelte name="MyComponent" props={%{...}} />
+
+      3. In your Svelte components, use the translation functions:
 
           <script>
             import { gettext, ngettext } from './translations'
-            export let translations
 
-            $: gettext.setTranslations(translations)
+            // Translations are automatically available from the script tag
           </script>
 
           <p>{gettext("Hello, world!")}</p>
 
-      3. Extract translations:
+      4. Extract and merge translations:
 
           $ mix gettext.extract
-
-      4. Merge translations into your locale files:
-
           $ mix gettext.merge priv/gettext
 
       For more information, visit:
