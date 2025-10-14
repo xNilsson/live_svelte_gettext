@@ -1,13 +1,19 @@
-# LiveSvelteGettext
+# LiveSvelte Gettext
 
-**TODO: Add description**
+Zero-maintenance internationalization for Phoenix + Svelte applications.
+
+## Features
+
+- ✨ **Compile-Time Extraction** - No generated files to commit
+- 🔄 **Automatic Recompilation** - Changes to Svelte files trigger rebuild
+- 🌍 **Standard Gettext** - Works with existing `mix gettext.extract`
+- 💪 **Type-Safe Client** - Full TypeScript support
+- 🚀 **One-Command Install** - Igniter-based setup
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `livesvelte_gettext` to your list of dependencies in `mix.exs`:
-
 ```elixir
+# mix.exs
 def deps do
   [
     {:livesvelte_gettext, "~> 0.1.0"}
@@ -15,7 +21,28 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/livesvelte_gettext>.
+Then run:
 
+```bash
+mix igniter.install livesvelte_gettext
+```
+
+## Quick Start
+
+[Step-by-step guide]
+
+## How It Works
+
+[Architecture explanation]
+
+## API Documentation
+
+[Link to HexDocs]
+
+## Contributing
+
+[Guidelines]
+
+## License
+
+MIT License - see LICENSE file
