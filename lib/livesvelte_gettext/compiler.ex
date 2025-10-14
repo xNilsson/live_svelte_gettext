@@ -234,63 +234,46 @@ defmodule LiveSvelteGettext.Compiler do
       """
       @spec all_translations(String.t()) :: %{String.t() => String.t()}
       def all_translations(locale) when is_binary(locale) do
-        # Switch to the requested locale
-        Gettext.put_locale(unquote(gettext_backend), locale)
-
         # Build the translation map at runtime
-        # Use runtime Gettext functions (not macros) since we have dynamic msgids
         backend = unquote(gettext_backend)
         extractions = unquote(Macro.escape(extractions))
 
         Enum.reduce(extractions, %{}, fn extraction, acc ->
           case extraction.type do
             :gettext ->
-              # For simple gettext, the key is the msgid
-              # Extract interpolation keys and provide dummy bindings to avoid warnings
-              bindings = extract_interpolation_bindings(extraction.msgid)
-              translated = Gettext.dgettext(backend, "default", extraction.msgid, bindings)
+              # For simple gettext, retrieve the translation WITHOUT interpolation
+              # We pass an empty bindings map, which will cause Gettext to return
+              # {:missing_bindings, translated_string, missing_keys} if there are interpolation
+              # markers in the msgstr. This gives us the raw msgstr with %{key} patterns intact.
+              translated =
+                case backend.lgettext(locale, "default", nil, extraction.msgid, %{}) do
+                  {:ok, str} -> str
+                  {:default, str} -> str
+                  {:missing_bindings, str, _keys} -> str
+                end
+
               Map.put(acc, extraction.msgid, translated)
 
             :ngettext ->
-              # For ngettext, we store both singular and plural forms
-              # The key format is "msgid|||msgid_plural" (triple pipe separator)
-              # Extract interpolation keys from both singular and plural
-              bindings =
-                extract_interpolation_bindings(extraction.msgid)
-                |> Map.merge(extract_interpolation_bindings(extraction.plural))
-
-              singular =
-                Gettext.dngettext(
-                  backend,
-                  "default",
-                  extraction.msgid,
-                  extraction.plural,
-                  1,
-                  bindings
-                )
-
-              plural =
-                Gettext.dngettext(
-                  backend,
-                  "default",
-                  extraction.msgid,
-                  extraction.plural,
-                  2,
-                  bindings
-                )
+              # For ngettext, we need to get raw translations without interpolation.
+              # Problem: lngettext automatically adds :count to bindings, causing interpolation.
+              #
+              # Solution: Since we don't have a way to bypass interpolation for plural forms,
+              # we'll return the raw msgid and msgid_plural from the extraction.
+              # The frontend will handle interpolation at runtime with actual values.
+              #
+              # Note: This means for non-default locales, users will need to manually
+              # provide translations. A future enhancement could parse .po files directly.
 
               key = "#{extraction.msgid}|||#{extraction.plural}"
-              Map.put(acc, key, %{"one" => singular, "other" => plural})
+
+              Map.put(
+                acc,
+                key,
+                %{"one" => extraction.msgid, "other" => extraction.plural}
+              )
           end
         end)
-      end
-
-      # Extract interpolation keys from a msgid and create dummy bindings
-      # e.g., "Hello %{name}!" => %{name: "__BINDING__"}
-      defp extract_interpolation_bindings(msgid) do
-        Regex.scan(~r/%\{(\w+)\}/, msgid)
-        |> Enum.map(fn [_full, key] -> {String.to_atom(key), "__BINDING__"} end)
-        |> Map.new()
       end
     end
   end

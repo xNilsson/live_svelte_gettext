@@ -77,6 +77,31 @@ defmodule LiveSvelteGettext.Integration.FullCompileTest do
       assert Map.has_key?(plural_value, "other")
     end
 
+    test "all_translations/1 preserves interpolation patterns" do
+      translations = TestGettext.all_translations("en")
+
+      # Check gettext with interpolation from UserProfile.svelte
+      # These should preserve the %{varname} patterns (no interpolation)
+      welcome_msg = translations["Welcome back, %{name}!"]
+      assert welcome_msg == "Welcome back, %{name}!"
+      refute String.contains?(welcome_msg, "__BINDING__")
+
+      step_msg = translations["Step %{current} of %{total}"]
+      assert step_msg == "Step %{current} of %{total}"
+      refute String.contains?(step_msg, "__BINDING__")
+
+      # Check ngettext with interpolation
+      # For plural forms, we return the raw msgid/msgid_plural to avoid Gettext's
+      # automatic :count binding interpolation. The frontend handles interpolation.
+      plural_key = "%{count} item|||%{count} items"
+      plural_value = translations[plural_key]
+
+      assert plural_value["one"] == "%{count} item"
+      assert plural_value["other"] == "%{count} items"
+      refute String.contains?(plural_value["one"], "__BINDING__")
+      refute String.contains?(plural_value["other"], "__BINDING__")
+    end
+
     test "__lsg_metadata__/0 returns correct structure" do
       metadata = TestGettext.__lsg_metadata__()
 
