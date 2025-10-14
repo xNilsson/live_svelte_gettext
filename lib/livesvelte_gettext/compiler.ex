@@ -1,0 +1,278 @@
+defmodule LiveSvelteGettext.Compiler do
+  @moduledoc """
+  Compile-time code generation for LiveSvelteGettext.
+
+  This module is responsible for:
+  1. Validating configuration options
+  2. Scanning Svelte files and extracting translation strings
+  3. Generating AST for gettext/ngettext calls (for extraction)
+  4. Generating the runtime `all_translations/1` function
+  5. Setting up `@external_resource` for automatic recompilation
+  """
+
+  @doc """
+  Validates the options passed to `use LiveSvelteGettext`.
+
+  Raises a `ArgumentError` if options are invalid.
+
+  ## Examples
+
+      iex> LiveSvelteGettext.Compiler.validate_options!(
+      ...>   gettext_backend: MyApp.Gettext,
+      ...>   svelte_path: "assets/svelte"
+      ...> )
+      :ok
+
+      iex> LiveSvelteGettext.Compiler.validate_options!([])
+      ** (ArgumentError) :gettext_backend is required
+  """
+  @spec validate_options!(keyword()) :: :ok
+  def validate_options!(opts) do
+    unless Keyword.has_key?(opts, :gettext_backend) do
+      raise ArgumentError, ":gettext_backend is required"
+    end
+
+    unless Keyword.has_key?(opts, :svelte_path) do
+      raise ArgumentError, ":svelte_path is required"
+    end
+
+    backend = Keyword.get(opts, :gettext_backend)
+
+    # Accept atoms or AST expressions (at compile time, module names can be complex AST)
+    # Valid forms: MyModule, __MODULE__, Some.Nested.Module (which is an alias AST)
+    # Also accept {:__block__, _, [atom]} which is how quoted module names work
+    valid_backend =
+      is_atom(backend) or
+        (is_tuple(backend) and elem(backend, 0) in [:__MODULE__, :__aliases__]) or
+        (is_tuple(backend) and match?({:__block__, _, [atom]} when is_atom(atom), backend))
+
+    unless valid_backend do
+      raise ArgumentError, ":gettext_backend must be a module name"
+    end
+
+    path = Keyword.get(opts, :svelte_path)
+
+    unless is_binary(path) do
+      raise ArgumentError, ":svelte_path must be a string"
+    end
+
+    :ok
+  end
+
+  @doc """
+  Generates the complete AST for the using module.
+
+  This is called at compile time and returns quoted expressions that will
+  be injected into the caller's module.
+
+  ## What gets generated:
+
+  1. `use Gettext, backend: <backend>` for gettext integration
+  2. `@external_resource` attributes for each Svelte file
+  3. Module attribute with extracted translations for compile-time use
+  4. Generated gettext/ngettext calls (for mix gettext.extract)
+  5. `all_translations/1` function for runtime translation access
+  6. `__lsg_metadata__/0` debug function
+
+  ## Examples
+
+      iex> ast = LiveSvelteGettext.Compiler.generate(
+      ...>   MyApp.Gettext,
+      ...>   MyApp.Gettext,
+      ...>   "test/fixtures/svelte"
+      ...> )
+      iex> is_list(ast)
+      true
+  """
+  @spec generate(module(), module(), String.t()) :: Macro.t()
+  def generate(_caller_module, gettext_backend, svelte_path) do
+    # Find all Svelte files
+    svelte_files = find_svelte_files(svelte_path)
+
+    # Extract translations from all files
+    extractions = LiveSvelteGettext.Extractor.extract_all(svelte_files)
+
+    # Generate the AST
+    quote do
+      # 1. Use Gettext with the specified backend
+      use Gettext, backend: unquote(gettext_backend)
+
+      # 2. Add @external_resource for each Svelte file (for recompilation)
+      unquote_splicing(generate_external_resources(svelte_files))
+
+      # 3. Store extractions as a module attribute for compile-time use
+      @lsg_extractions unquote(Macro.escape(extractions))
+      @lsg_svelte_files unquote(svelte_files)
+      @lsg_gettext_backend unquote(gettext_backend)
+
+      # 4. Generate gettext/ngettext calls (for mix gettext.extract to discover)
+      unquote_splicing(generate_extraction_calls(extractions))
+
+      # 5. Generate the runtime all_translations/1 function
+      unquote(generate_all_translations_function(extractions, gettext_backend))
+
+      # 6. Generate the debug metadata function
+      unquote(generate_metadata_function())
+    end
+  end
+
+  ## Private functions
+
+  @doc false
+  def find_svelte_files(svelte_path) do
+    # Make path absolute if it's relative
+    full_path =
+      if Path.type(svelte_path) == :absolute do
+        svelte_path
+      else
+        Path.join(File.cwd!(), svelte_path)
+      end
+
+    # Recursively find all .svelte files
+    case File.ls(full_path) do
+      {:ok, _entries} ->
+        Path.join(full_path, "**/*.svelte")
+        |> Path.wildcard()
+        |> Enum.sort()
+
+      {:error, _reason} ->
+        # Directory doesn't exist - return empty list
+        # This allows the module to compile even if the directory doesn't exist yet
+        []
+    end
+  end
+
+  # Generate @external_resource attributes for automatic recompilation
+  defp generate_external_resources(files) do
+    Enum.map(files, fn file ->
+      quote do
+        @external_resource unquote(file)
+      end
+    end)
+  end
+
+  # Generate gettext/ngettext calls that mix gettext.extract can discover
+  defp generate_extraction_calls(extractions) do
+    Enum.flat_map(extractions, fn extraction ->
+      case extraction.type do
+        :gettext ->
+          [
+            quote do
+              _ = gettext(unquote(extraction.msgid))
+            end
+          ]
+
+        :ngettext ->
+          [
+            quote do
+              _ = ngettext(unquote(extraction.msgid), unquote(extraction.plural), 1)
+            end
+          ]
+      end
+    end)
+  end
+
+  # Generate the all_translations/1 function
+  defp generate_all_translations_function(extractions, gettext_backend) do
+    quote do
+      @doc """
+      Returns all translations for the given locale.
+
+      This function is generated at compile time and includes all translation
+      strings found in your Svelte components.
+
+      ## Parameters
+
+      - `locale` - The locale string (e.g., "en", "es", "fr")
+
+      ## Returns
+
+      A map with translation keys as strings and translated values:
+
+          %{
+            "Hello" => "Hello",
+            "Welcome back, %{name}!" => "Welcome back, %{name}!",
+            ...
+          }
+
+      ## Examples
+
+          iex> #{inspect(__MODULE__)}.all_translations("en")
+          %{"Save" => "Save", "Delete" => "Delete"}
+      """
+      @spec all_translations(String.t()) :: %{String.t() => String.t()}
+      def all_translations(locale) when is_binary(locale) do
+        # Switch to the requested locale
+        Gettext.put_locale(unquote(gettext_backend), locale)
+
+        # Build the translation map at runtime
+        # Use runtime Gettext functions (not macros) since we have dynamic msgids
+        backend = unquote(gettext_backend)
+        extractions = unquote(Macro.escape(extractions))
+
+        Enum.reduce(extractions, %{}, fn extraction, acc ->
+          case extraction.type do
+            :gettext ->
+              # For simple gettext, the key is the msgid
+              # Use Gettext.dgettext/3 (runtime function) instead of gettext/1 macro
+              translated = Gettext.dgettext(backend, "default", extraction.msgid)
+              Map.put(acc, extraction.msgid, translated)
+
+            :ngettext ->
+              # For ngettext, we store both singular and plural forms
+              # The key format is "msgid|||msgid_plural" (triple pipe separator)
+              # Use Gettext.dngettext/5 (runtime function) instead of ngettext/3 macro
+              singular =
+                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 1)
+
+              plural =
+                Gettext.dngettext(backend, "default", extraction.msgid, extraction.plural, 2)
+
+              key = "#{extraction.msgid}|||#{extraction.plural}"
+              Map.put(acc, key, %{"one" => singular, "other" => plural})
+          end
+        end)
+      end
+    end
+  end
+
+  # Generate the debug metadata function
+  defp generate_metadata_function do
+    quote do
+      @doc """
+      Returns metadata about the extracted translations.
+
+      This is useful for debugging and understanding what translations
+      were found at compile time.
+
+      ## Returns
+
+      A map containing:
+      - `:extractions` - List of all extracted translation strings
+      - `:svelte_files` - List of Svelte files that were scanned
+      - `:gettext_backend` - The Gettext backend being used
+
+      ## Examples
+
+          iex> #{inspect(__MODULE__)}.__lsg_metadata__()
+          %{
+            extractions: [...],
+            svelte_files: ["assets/svelte/Button.svelte", ...],
+            gettext_backend: MyApp.Gettext
+          }
+      """
+      @spec __lsg_metadata__() :: %{
+              extractions: [LiveSvelteGettext.Extractor.extraction()],
+              svelte_files: [String.t()],
+              gettext_backend: module()
+            }
+      def __lsg_metadata__ do
+        %{
+          extractions: @lsg_extractions,
+          svelte_files: @lsg_svelte_files,
+          gettext_backend: @lsg_gettext_backend
+        }
+      end
+    end
+  end
+end
