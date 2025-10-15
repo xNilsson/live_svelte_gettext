@@ -216,6 +216,25 @@ mix gettext.merge priv/gettext
 # Then your Svelte components will automatically use the translated strings!
 ```
 
+## Managing Translations
+
+Once you've extracted strings, you need to actually translate them. I've found [gettext_ops](https://hex.pm/packages/gettext_ops) useful for working with `.po` files without opening them in an editor:
+
+```bash
+# See what needs translation
+mix gettext_ops.list_untranslated --locale sv --json --limit 10
+
+# Apply translations in bulk
+mix gettext_ops.translate --locale sv <<EOF
+Welcome to our app = Välkommen till vår app
+Hello, %{name} = Hej, %{name}
+EOF
+```
+
+This workflow keeps the accurate Svelte source references intact (`assets/svelte/Button.svelte:42`), which is helpful when you need context for translation.
+
+If you have other tools or workflows that work better, I'd love to hear about them!
+
 ## How It Works
 
 This POC uses a compile-time macro approach to bridge Elixir's gettext and Svelte's runtime:
@@ -276,7 +295,7 @@ This keeps the developer workflow simple: write `gettext()` in Svelte, run `mix 
 **Reasoning**:
 - **Existing Tools**: Developers can use their existing translation workflows
 - **Reference Accuracy**: `.pot` files showing `assets/svelte/Button.svelte:42` helps translators understand context
-- **CLI Tool Integration**: Makes it possible to use tools like [poflow](https://github.com/xNilsson/poflow) for AI-assisted translation. `poflow` is a tool built by me to make .po files changes more efficiently with llms.
+- **CLI Tool Integration**: Works seamlessly with [gettext_ops](https://hex.pm/packages/gettext_ops) for efficient .po file operations and AI-assisted translation.
 - **No Learning Curve**: Developers already know `mix gettext.extract` and `.po` file workflows
 
 The `CustomExtractor` was necessary to solve the "all references point to the macro invocation line" problem.
